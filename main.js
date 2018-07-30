@@ -428,48 +428,51 @@ function rollDice(arr) {
                 arr[ID].wall = null;
                 
                 //negate player
-                if(!arr[ID] instanceof Player){
+                if(arr[ID] instanceof Unit){
                     //unitSpeed set
                     arr[ID].unitSpeed= Math.floor(Math.random() * settings.unitSpeed)+.25;
-                }
                 
-                // grouping behavior
-                for (var i=0;i<arr.length;i++){
-                    
-                    // too close for comfort
-                    if(arr[ID].x<=arr[i].x+arr[i].size && arr[ID].x>=arr[i].x-arr[i].size && arr[ID].y<=arr[i].y+arr[i].size && arr[ID].y>=arr[i].y-arr[i].size && ID!=i){
-                        //collision 
-                        arr[i].unitSpeed+=arr[i].unitSpeed < 2 ? .25 : 0;
-                        arr[ID].unitSpeed-=arr[ID].unitSpeed > 0 ? .25 : 0;
-                        arr[i].bool=arr[ID].bool;
-                        arr[ID].bool=!arr[ID].bool;
-                        arr[ID].collision=1;
-                        arr[ID].wall = arr[ID].direction;
-                    }else{
-                        arr[ID].collision=0;
-                        arr[ID].wall = null;
-                    }
-
-                    if(arr[ID].type == arr[i].type && (arr[i].collision < 1 || arr[ID].collision < 1) && ID!=i){
-                        var grp = settings.groupingRange;
-                        if(!arr[ID].human){grp+=1;}
+                
+                    // grouping behavior
+                    for (var i=0;i<arr.length;i++){
                         
-                        // in grp range
-                        if(arr[ID].x<=arr[i].x+arr[i].size*settings.groupingRange && arr[ID].x>=arr[i].x-arr[i].size*settings.groupingRange && arr[ID].y<=arr[i].y+arr[i].size*settings.groupingRange && arr[ID].y>=arr[i].y-arr[i].size*settings.groupingRange){
-                            arr[ID].direction = arr[i].direction;   
-                            arr[ID].synapse=arr[i].synapse;
-                            arr[ID].decision=arr[i].decision;
-                            if(arr[ID].unitSpeed<settings.unitSpeed){
-                            arr[ID].unitSpeed += Math.floor(Math.random() * arr[i].unitSpeed+.25)+.5;
-                            }
-                            if(arr[ID].human){
-                            arr[ID].bool== (Math.floor(Math.random() * 2) == 0);
-                            }else{
-                            arr[ID].bool=arr[i].bool;
+                        // too close for comfort
+                        if(arr[ID].x<=arr[i].x+arr[i].size && arr[ID].x>=arr[i].x-arr[i].size && arr[ID].y<=arr[i].y+arr[i].size && arr[ID].y>=arr[i].y-arr[i].size && ID!=i){
+                            //collision 
+                            if(arr[i] instanceof Unit){ arr[i].unitSpeed+=arr[i].unitSpeed < 2 ? .25 : 0;}
+                            arr[ID].unitSpeed-=arr[ID].unitSpeed > 0 ? .25 : 0;
+                            if(arr[i] instanceof Unit){ arr[i].bool=arr[ID].bool;}
+                            arr[ID].bool=!arr[ID].bool;
+                            arr[ID].collision=1;
+                            arr[ID].wall = arr[ID].direction;
+                        }else{
+                            arr[ID].collision=0;
+                            arr[ID].wall = null;
+                        }
+
+                        if(arr[ID].type == arr[i].type && (arr[i].collision < 1 || arr[ID].collision < 1) && ID!=i){
+                            
+                            // in grp range
+                            if(arr[ID].x<=arr[i].x+arr[i].size*settings.groupingRange && arr[ID].x>=arr[i].x-arr[i].size*settings.groupingRange && arr[ID].y<=arr[i].y+arr[i].size*settings.groupingRange && arr[ID].y>=arr[i].y-arr[i].size*settings.groupingRange){
+                                arr[ID].direction = arr[i].direction;   
+                                arr[ID].synapse=arr[i].synapse;
+                                arr[ID].decision=arr[i].decision;
+                                if(arr[ID].unitSpeed<settings.unitSpeed){
+                                arr[ID].unitSpeed += Math.floor(Math.random() * arr[i].unitSpeed+.25)+.5;
+                                }
+
+                                arr[ID].bool=arr[i].bool;
                             }
                         }
+
+                        if(arr[ID] instanceof Unit && arr[i] instanceof Player){
+                            if(arr[ID].x<=arr[i].x+arr[i].size*settings.groupingRange && arr[ID].x>=arr[i].x-arr[i].size*settings.groupingRange && arr[ID].y<=arr[i].y+arr[i].size*settings.groupingRange && arr[ID].y>=arr[i].y-arr[i].size*settings.groupingRange){
+                                console.log(arr[ID].type);
+                                console.log('im coming for you barbara');
+                            }
+                        }
+                            
                     }
-                        
                 }
                             
             }
@@ -480,18 +483,23 @@ function rollDice(arr) {
                 movearr(ID,arr[ID].direction,arr);
             }
             
-            if(arr[ID].decision>arr[ID].synapse){
-                    arr[ID].choice=arr[ID].choice*-1;
-                    arr[ID].decision=0;
-                    arr[ID].direction=0;
-                    movearr(ID,arr[ID].direction,arr);
-            }else{
-                if(arr[ID].direction==0){
-                    movearr(ID,Math.floor(Math.random() * 4)+1,arr);
-                }else if(arr[ID].collision==0){
-                    movearr(ID,arr[ID].direction,arr);  
+            // negate player
+            if(arr[ID] instanceof Unit){
+                if(arr[ID].decision>arr[ID].synapse){
+                        arr[ID].choice=arr[ID].choice*-1;
+                        arr[ID].decision=0;
+                        arr[ID].direction=0;
+                        movearr(ID,arr[ID].direction,arr);
+                }else{
+                    if(arr[ID].direction==0){
+                        movearr(ID,Math.floor(Math.random() * 4)+1,arr);
+                    }else if(arr[ID].collision==0){
+                        movearr(ID,arr[ID].direction,arr);  
+                    }
+                    
                 }
-                
+            }else{
+                movearr(ID,arr[ID].direction,arr);
             }
         }
     }
@@ -500,16 +508,19 @@ function rollDice(arr) {
 function movearr(ID,dir,arr) {      
     
     arr[ID].decisionLog.push(dir);
-    if(arr[ID].decisionLog.length > 3){
-        arr[ID].decisionLog.splice(0, 1);
-    }
     
-    if(arr[ID].decisionLog.indexOf(dir)){
-        arr[ID].bool = !arr[ID].bool;
-    }
-    
-    if(arr[ID].collision){
-        arr[ID].bool = !arr[ID].bool;
+    if(arr[ID] instanceof Unit){ 
+        if(arr[ID].decisionLog.length > 3){
+            arr[ID].decisionLog.splice(0, 1);
+        }
+        
+        if(arr[ID].decisionLog.indexOf(dir)){
+            arr[ID].bool = !arr[ID].bool;
+        }
+        
+        if(arr[ID].collision){
+            arr[ID].bool = !arr[ID].bool;
+        }
     }
     
     if(!arr[ID].change && arr[ID].wall != 0){
