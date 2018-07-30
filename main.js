@@ -1,49 +1,13 @@
-//todo
-
-//
-// clean this shit up, the switches and blocks of identical code got to go
-
-//
-// create array of cord ids as index of all existing things in 'universe'?
-
-//
-// create coordinate id system for all unit instances in world
-// instead of looping all for collisions, check surrounding cordIDs for exist
-
-
-// 
-// next create non 'live' units 'walls' for collision detect
-
-//
-// create elasticity of grouping to prevent seperation of mass in certain scenarios
-
-//
-// make this shit proper oop, clean up for es6 using classes etc
-
-//
-// create a way of attracting the swarm from distance
-
-// swarm war, premise nanites mulitplayer, 
-// users draw walls
-// opposing swarms destroy walls to provide resources for their player
-// player has resource stockipile to build either walls or swarms
-// swarms eat other swarms for resources as well
-// figure out proper roi for swarms vs walls 
-
-// WIP
-// fucking neighbor logic to allow walls to break into units, 
-// might be simpler to tag units as part fo the same wall at time of construct
-
 
 // initial settings
 var settings ={
-    width:Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
-    height:Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
-    num:0,
+    width:960,
+    height:640,
+    num:10,
     imgHeight:55,
     imgWidth:20,
     unitSpeed:2,
-    unitSize:1,
+    unitSize:4,
     hitSize:5,
     groupingRange:5,
     detectionRange:12,
@@ -80,7 +44,7 @@ c.width = settings.width;
 c.height = settings.height;
 
 //helper functions
-c.addEventListener("mousedown", unitInteraction, false);
+// c.addEventListener("mousedown", unitInteraction, false);
 
 function unitInteraction(e){  
     var x = e.pageX - this.offsetLeft;
@@ -152,53 +116,77 @@ function findNeighbors(single){
 }
 
 // user interactions 
-c.onmousemove = function(e) {
-    // check if user is drawling or spawning
-    if (!c.isDrawing && !c.isSpawning) {
-       return;
-    }
-    var single = new unit;
-    single.x = e.pageX - this.offsetLeft;
-    single.y = e.pageY - this.offsetTop;
-    single.bool = 0;
-    if(e.movementY < 0){
-        single.direction = 1;
-    }
-    // todo need dir modifiers for bool and choice based on movement
-    // will require +2 for each potential choice 1 or -1 modifier
+// c.onmousemove = function(e) {
+//     // check if user is drawling or spawning
+//     if (!c.isDrawing && !c.isSpawning) {
+//        return;
+//     }
+//     var single = new Unit;
+//     single.x = e.pageX - this.offsetLeft;
+//     single.y = e.pageY - this.offsetTop;
+//     single.bool = 0;
+//     if(e.movementY < 0){
+//         single.direction = 1;
+//     }
+//     // todo need dir modifiers for bool and choice based on movement
+//     // will require +2 for each potential choice 1 or -1 modifier
 
-    if(e.movementX > 0){
-        single.direction = 2;
-    }
-    if(e.movementY > 0){
-        single.direction = 3;
-    }
-    if(e.movementX < 0){
-        single.direction = 4;
-    }
-    if(c.isDrawing){
-        c.isSpawning = false;
-        clearTimeout(heldTimeout);
-        wallifyUnit(single);
-    }
-    unitInstances.push(single);
+//     if(e.movementX > 0){
+//         single.direction = 2;
+//     }
+//     if(e.movementY > 0){
+//         single.direction = 3;
+//     }
+//     if(e.movementX < 0){
+//         single.direction = 4;
+//     }
+//     if(c.isDrawing){
+//         c.isSpawning = false;
+//         clearTimeout(heldTimeout);
+//         wallifyUnit(single);
+//     }
+//     unitInstances.push(single);
 
+// }
+
+// c.onmousedown = function(e) {
+//     c.isDrawing = true;
+//     heldTimeout = setTimeout(function(){
+//         c.isDrawing = false;
+//         c.isSpawning = true;
+//     }, 1000);
+// };
+// c.onmouseup = function(e) {
+//     c.isDrawing = false;
+//     c.isSpawning = false;
+//     clearTimeout(heldTimeout);
+// };
+
+//set rightDown or leftDown if the right or left keys are down
+function onKeyDown(evt) {
+    if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
+        console.log(player);
+        if (evt.keyCode == 38) Object.assign(player, {direction:1,unitSpeed:2}) // up
+        if (evt.keyCode == 39) Object.assign(player, {direction:2,unitSpeed:2}) // right
+        if (evt.keyCode == 40) Object.assign(player, {direction:3,unitSpeed:2}) // down
+        if (evt.keyCode == 37) Object.assign(player, {direction:4,unitSpeed:2}) // left
+        evt.preventDefault();
+    }
 }
 
-c.onmousedown = function(e) {
-    c.isDrawing = true;
-    heldTimeout = setTimeout(function(){
-        c.isDrawing = false;
-        c.isSpawning = true;
-    }, 1000);
-};
-c.onmouseup = function(e) {
-    c.isDrawing = false;
-    c.isSpawning = false;
-    clearTimeout(heldTimeout);
-};
+//and unset them when the right or left key is released
+function onKeyUp(evt) {
+    if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
+        Object.assign(player, {unitSpeed:0});
+    }
+}
 
-function unit(){
+
+document.addEventListener("keydown", onKeyDown);
+document.addEventListener("keyup", onKeyUp);
+
+
+function Unit(){
     this.x = settings.width/2;
     this.y = settings.height/2; 
     this.size = settings.unitSize;
@@ -216,9 +204,28 @@ function unit(){
     this.stroke = settings.stroke;
 }
 
+function Player(){
+    this.x = settings.width/2;
+    this.y = settings.height/2; 
+    this.size = settings.unitSize*2;
+    this.unitSpeed = 0;
+    this.direction = 0; 
+    this.decision = 0;
+    this.collision = 0;
+    this.bool = 0;
+    this.choice = 0;
+    this.decisionLog = [];
+    // bool set to player type
+    this.type = 1;
+    this.frame = 0;
+    this.animrate = 2;
+    this.fill = 'rgba(18, 173, 42, 1)';
+    this.stroke = settings.stroke;
+}
+
 function genunitInstances(){
     for(var i=0;i<settings.num;i++){
-        unitInstances.push(new unit);
+        unitInstances.push(new Unit);
     }
 };
 
@@ -371,7 +378,7 @@ function disposition(disp,arr,ID,i){
 
 function rollDice(arr) {
     for (var ID=0;ID<arr.length;ID++){
-        
+
         // check for pulse
         if(!arr[ID].dead){
         
@@ -393,23 +400,25 @@ function rollDice(arr) {
                 if(arr[ID].collision <= 1){
                     arr[ID].wall = arr[ID].direction;
                 }
-                switch(arr[ID].wall){
-                case 0:
-                arr[ID].direction=Math.floor(Math.random() * 4)+1;
-                break;
-                case 1:
-                arr[ID].direction=3;
-                break;
-                case 2:
-                arr[ID].direction=4;
-                break;
-                case 3:
-                arr[ID].direction=1;
-                break;
-                case 4:
-                arr[ID].direction=2;
-                break;
-                    
+                
+                if(arr[ID] instanceof Unit){
+                    switch(arr[ID].wall){
+                        case 0:
+                        arr[ID].direction=Math.floor(Math.random() * 4)+1;
+                        break;
+                        case 1:
+                        arr[ID].direction=3;
+                        break;
+                        case 2:
+                        arr[ID].direction=4;
+                        break;
+                        case 3:
+                        arr[ID].direction=1;
+                        break;
+                        case 4:
+                        arr[ID].direction=2;
+                        break; 
+                    }
                 }
                             
             }else{
@@ -418,8 +427,11 @@ function rollDice(arr) {
                 arr[ID].collision=0;
                 arr[ID].wall = null;
                 
-                //unitSpeed set
-                arr[ID].unitSpeed= Math.floor(Math.random() * settings.unitSpeed)+.25;
+                //negate player
+                if(!arr[ID] instanceof Player){
+                    //unitSpeed set
+                    arr[ID].unitSpeed= Math.floor(Math.random() * settings.unitSpeed)+.25;
+                }
                 
                 // grouping behavior
                 for (var i=0;i<arr.length;i++){
@@ -544,6 +556,10 @@ function movearr(ID,dir,arr) {
     }
 };
 
+// spawn player
+unitInstances.push(new Player);
+// id the player for all use
+let player = unitInstances.find(unit => unit instanceof Player);
 genunitInstances();
 
 function timeLoop() {
