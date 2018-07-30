@@ -441,11 +441,11 @@ function rollDice(arr) {
                     if(grouping.length){
                         for (i in grouping){
                             if(arr[i] instanceof Unit){
-                                console.log(arr[i]);
-                                arr[i].direction = arr[ID].direction;   
-                                arr[i].decision=arr[ID].decision;
-                                arr[i].unitSpeed=arr[ID].unitSpeed;
-                                arr[i].bool=arr[ID].bool;
+                                arr[ID].direction = arr[i].direction;   
+                                arr[ID].decision=arr[i].decision;
+                                arr[ID].unitSpeed=arr[i].unitSpeed;
+                                arr[ID].bool=arr[i].bool;
+                                break;
                             }
                         }
                     }
