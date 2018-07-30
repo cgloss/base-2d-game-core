@@ -3,7 +3,7 @@
 var settings ={
     width:960,
     height:640,
-    num:10,
+    num:30,
     imgHeight:55,
     imgWidth:20,
     unitSpeed:2,
@@ -46,53 +46,53 @@ c.height = settings.height;
 //helper functions
 // c.addEventListener("mousedown", unitInteraction, false);
 
-function unitInteraction(e){  
-    var x = e.pageX - this.offsetLeft;
-    var y = e.pageY - this.offsetTop;
-    var found = false;
-    // todo 
-    // this should really use the global cordinate system to determine finger click
-    for (var ID=0;ID<unitInstances.length;ID++){
-        if(unitInstances[ID].x<=x+settings.fingerSize && unitInstances[ID].x>=x-settings.fingerSize && unitInstances[ID].y<=y+settings.fingerSize && unitInstances[ID].y>=y-settings.fingerSize){
-            found = unitInstances[ID];
-            break;
-        }
-    }
-    if(found){
-        var unitNeighbors = findNeighbors(unitInstances[ID]);
+// function unitInteraction(e){  
+//     var x = e.pageX - this.offsetLeft;
+//     var y = e.pageY - this.offsetTop;
+//     var found = false;
+//     // todo 
+//     // this should really use the global cordinate system to determine finger click
+//     for (var ID=0;ID<unitInstances.length;ID++){
+//         if(unitInstances[ID].x<=x+settings.fingerSize && unitInstances[ID].x>=x-settings.fingerSize && unitInstances[ID].y<=y+settings.fingerSize && unitInstances[ID].y>=y-settings.fingerSize){
+//             found = unitInstances[ID];
+//             break;
+//         }
+//     }
+//     if(found){
+//         var unitNeighbors = findNeighbors(unitInstances[ID]);
         
-        for(var i = unitNeighbors.length - 1; i >= 0; i--) {
-            if(typeof unitInstances[unitNeighbors[i]] != 'undefined'){
-               swarmifyUnit(unitInstances[unitNeighbors[i]]);
-            }
-        }
-    }
-}
+//         for(var i = unitNeighbors.length - 1; i >= 0; i--) {
+//             if(typeof unitInstances[unitNeighbors[i]] != 'undefined'){
+//                swarmifyUnit(unitInstances[unitNeighbors[i]]);
+//             }
+//         }
+//     }
+// }
 
-function wallifyUnit(single){
-    single.speed = 0;
-    single.size = settings.unitSize*4;
-    single.fill = '#fff';
-    single.stroke = '#fff';
-    single.dead = true;
-}
+// function wallifyUnit(single){
+//     single.speed = 0;
+//     single.size = settings.unitSize*4;
+//     single.fill = '#fff';
+//     single.stroke = '#fff';
+//     single.dead = true;
+// }
 
-// todo 
-// should have been able to just reinitialize the unit rather then explicitly set
-function swarmifyUnit(single){
-    single.speed = 1;
-    single.size = settings.unitSize;
-    single.fill = settings.fill;
-    single.stroke = settings.stroke;
-    single.dead = false;
-}
+// // todo 
+// // should have been able to just reinitialize the unit rather then explicitly set
+// function swarmifyUnit(single){
+//     single.speed = 1;
+//     single.size = settings.unitSize;
+//     single.fill = settings.fill;
+//     single.stroke = settings.stroke;
+//     single.dead = false;
+// }
 
-function findNeighbors(single){
+function findNeighbors(single,proximity=1){
     //var xyCoords = coordID(single).split(/x|y/).filter(Boolean);
     var xArr = [];
     var yArr = [];
     var neighborArr = [];
-    var range = single.size;
+    var range = single.size*proximity;
     // build x coords arr
     for (var i = range; i >= 0; i--){
         xArr.push(single.x-range+i);
@@ -165,7 +165,7 @@ function findNeighbors(single){
 //set rightDown or leftDown if the right or left keys are down
 function onKeyDown(evt) {
     if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-        console.log(player);
+        // console.log(player);
         if (evt.keyCode == 38) Object.assign(player, {direction:1,unitSpeed:2}) // up
         if (evt.keyCode == 39) Object.assign(player, {direction:2,unitSpeed:2}) // right
         if (evt.keyCode == 40) Object.assign(player, {direction:3,unitSpeed:2}) // down
@@ -187,8 +187,8 @@ document.addEventListener("keyup", onKeyUp);
 
 
 function Unit(){
-    this.x = settings.width/2;
-    this.y = settings.height/2; 
+    this.x = Math.floor(Math.random() * settings.width);
+    this.y = Math.floor(Math.random() * settings.height); 
     this.size = settings.unitSize;
     this.unitSpeed = settings.unitSpeed;
     this.direction = 0; 
@@ -384,15 +384,6 @@ function rollDice(arr) {
         
             arr[ID].decision += Math.floor(Math.random() * 4)+1;
             
-
-            var indexID = coordID(arr[ID]);
-            // new collision detection
-            // if(indexID in gps){
-            //     console.log(coordID(arr[ID]));
-            // }else{
-            //     console.log(indexID);
-            // }
-
             //initial collision detect
             if(arr[ID].x<=arr[ID].size||arr[ID].x>=c.width-arr[ID].size||arr[ID].y<=arr[ID].size||arr[ID].y>=c.height-arr[ID].size){
 
@@ -429,49 +420,34 @@ function rollDice(arr) {
                 
                 //negate player
                 if(arr[ID] instanceof Unit){
-                    //unitSpeed set
-                    arr[ID].unitSpeed= Math.floor(Math.random() * settings.unitSpeed)+.25;
-                
-                
-                    // grouping behavior
-                    for (var i=0;i<arr.length;i++){
-                        
-                        // too close for comfort
-                        if(arr[ID].x<=arr[i].x+arr[i].size && arr[ID].x>=arr[i].x-arr[i].size && arr[ID].y<=arr[i].y+arr[i].size && arr[ID].y>=arr[i].y-arr[i].size && ID!=i){
-                            //collision 
-                            if(arr[i] instanceof Unit){ arr[i].unitSpeed+=arr[i].unitSpeed < 2 ? .25 : 0;}
-                            arr[ID].unitSpeed-=arr[ID].unitSpeed > 0 ? .25 : 0;
-                            if(arr[i] instanceof Unit){ arr[i].bool=arr[ID].bool;}
-                            arr[ID].bool=!arr[ID].bool;
-                            arr[ID].collision=1;
-                            arr[ID].wall = arr[ID].direction;
-                        }else{
-                            arr[ID].collision=0;
-                            arr[ID].wall = null;
-                        }
+                    // rng unitSpeed set
+                    arr[ID].unitSpeed= Math.floor(Math.random() * settings.unitSpeed)+.5;
 
-                        if(arr[ID].type == arr[i].type && (arr[i].collision < 1 || arr[ID].collision < 1) && ID!=i){
-                            
-                            // in grp range
-                            if(arr[ID].x<=arr[i].x+arr[i].size*settings.groupingRange && arr[ID].x>=arr[i].x-arr[i].size*settings.groupingRange && arr[ID].y<=arr[i].y+arr[i].size*settings.groupingRange && arr[ID].y>=arr[i].y-arr[i].size*settings.groupingRange){
-                                arr[ID].direction = arr[i].direction;   
-                                arr[ID].synapse=arr[i].synapse;
-                                arr[ID].decision=arr[i].decision;
-                                if(arr[ID].unitSpeed<settings.unitSpeed){
-                                arr[ID].unitSpeed += Math.floor(Math.random() * arr[i].unitSpeed+.25)+.5;
-                                }
-
-                                arr[ID].bool=arr[i].bool;
+                    // new collision base on gps
+                    var collision = findNeighbors(arr[ID]);
+                    if(collision.length){
+                        for (i in collision){
+                            if(arr[i] instanceof Unit){
+                                arr[i].bool=!arr[ID].bool;
+                                arr[i].collision=1;
+                                arr[i].wall = arr[ID].direction;
+                                arr[i].unitSpeed = arr[ID].unitSpeed > 0 ? (arr[ID].unitSpeed*.75) : settings.unitSpeed;
                             }
                         }
+                    }
 
-                        if(arr[ID] instanceof Unit && arr[i] instanceof Player){
-                            if(arr[ID].x<=arr[i].x+arr[i].size*settings.groupingRange && arr[ID].x>=arr[i].x-arr[i].size*settings.groupingRange && arr[ID].y<=arr[i].y+arr[i].size*settings.groupingRange && arr[ID].y>=arr[i].y-arr[i].size*settings.groupingRange){
-                                console.log(arr[ID].type);
-                                console.log('im coming for you barbara');
+                    // new grouping base on gps
+                    var grouping = findNeighbors(arr[ID],settings.groupingRange);
+                    if(grouping.length){
+                        for (i in grouping){
+                            if(arr[i] instanceof Unit){
+                                console.log(arr[i]);
+                                arr[i].direction = arr[ID].direction;   
+                                arr[i].decision=arr[ID].decision;
+                                arr[i].unitSpeed=arr[ID].unitSpeed;
+                                arr[i].bool=arr[ID].bool;
                             }
                         }
-                            
                     }
                 }
                             
@@ -485,18 +461,11 @@ function rollDice(arr) {
             
             // negate player
             if(arr[ID] instanceof Unit){
-                if(arr[ID].decision>arr[ID].synapse){
-                        arr[ID].choice=arr[ID].choice*-1;
-                        arr[ID].decision=0;
-                        arr[ID].direction=0;
-                        movearr(ID,arr[ID].direction,arr);
-                }else{
-                    if(arr[ID].direction==0){
-                        movearr(ID,Math.floor(Math.random() * 4)+1,arr);
-                    }else if(arr[ID].collision==0){
-                        movearr(ID,arr[ID].direction,arr);  
-                    }
-                    
+                // no direction set
+                if(arr[ID].direction==0){
+                    movearr(ID,Math.floor(Math.random() * 4)+1,arr);
+                }else if(arr[ID].collision==0){
+                    movearr(ID,arr[ID].direction,arr);  
                 }
             }else{
                 movearr(ID,arr[ID].direction,arr);
@@ -572,13 +541,15 @@ unitInstances.push(new Player);
 // id the player for all use
 let player = unitInstances.find(unit => unit instanceof Player);
 genunitInstances();
+// global pos obj array
+gps={};
 
 function timeLoop() {
-    // global pos obj array
-    gps={};
     ctx.clearRect(0,0,c.width,c.height);
     //ctx.globalAlpha = 0.2;
     rollDice(unitInstances);
+    // global pos obj array
+    gps={};
     drawUnitsLoop(unitInstances);
     settings.fps = setTimeout(timeLoop, 1000 / 30);
     //console.log(unitInstances[0]);
