@@ -428,10 +428,11 @@ function rollDice(arr) {
                     if(collision.length){
                         for (i in collision){
                             if(arr[i] instanceof Unit){
-                                arr[i].bool=!arr[ID].bool;
-                                arr[i].collision=1;
-                                arr[i].wall = arr[ID].direction;
-                                arr[i].unitSpeed = arr[ID].unitSpeed > 0 ? (arr[ID].unitSpeed*.75) : settings.unitSpeed;
+                                arr[ID].bool=!arr[i].bool;
+                                arr[ID].collision=1;
+                                arr[ID].wall = arr[i].direction;
+                                arr[ID].unitSpeed = arr[i].unitSpeed > 0 ? (arr[i].unitSpeed*.75) : settings.unitSpeed;
+                                break;
                             }
                         }
                     }
@@ -551,7 +552,7 @@ function timeLoop() {
     // global pos obj array
     gps={};
     drawUnitsLoop(unitInstances);
-    settings.fps = setTimeout(timeLoop, 1000 / 30);
+    settings.fps = setTimeout(timeLoop, 1000 / 60);
     //console.log(unitInstances[0]);
     //console.log(Object.keys(gps).length);
 }  
