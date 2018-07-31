@@ -3,7 +3,7 @@
 var settings ={
     width:960,
     height:640,
-    num:10,
+    num:12,
     imgHeight:55,
     imgWidth:20,
     velocity:2,
@@ -131,48 +131,46 @@ function pursuitCourse(self,target) {
     {
     //up
     case 1:
-      futurePos.y = target.y - (target.velocity*3);
-      if(target.bool){
+        futurePos.y = target.y - (target.velocity*2);
         futurePos.x = target.x + target.choice;
-      }
       break;
     //right
     case 2:
-      futurePos.x = target.x + (target.velocity*3);
-      if(target.bool){
+        futurePos.x = target.x + (target.velocity*2);
         futurePos.y = target.y - target.choice;
-      }
       break;
     //down
     case 3:
-      futurePos.y = target.y + (target.velocity*3);
-      if(target.bool){
+        futurePos.y = target.y + (target.velocity*2);
         futurePos.x = target.x - target.choice;
-      }
       break;
     //left
     case 4:
-      futurePos.x = target.x - (target.velocity*3);
-      if(target.bool){
+        futurePos.x = target.x - (target.velocity*2);
         futurePos.y = target.y + target.choice;
-      }
       break;
     default:
-      //do nothing
+        futurePos.x = target.x;
+        futurePos.y = target.y;
     }
 
     if(futurePos.y < self.y){
-        return 1;
+        self.direction = 1;
+        self.y -= self.velocity + target.velocity;
     }
     if(futurePos.x < self.x){
-        return 2;
+        self.direction = 4;
+        self.x -= self.velocity + target.velocity;
     }
     if(futurePos.y > self.y){
-        return 3;
+        self.direction = 3;
+        self.y += self.velocity + target.velocity;
     }
     if(futurePos.x > self.x){
-        return 4;
+        self.direction = 2;
+        self.x += self.velocity + target.velocity;
     }
+    
 }
 
 // user interactions 
@@ -262,6 +260,7 @@ function Unit(){
     this.animrate = 2;
     this.fill = settings.fill;
     this.stroke = settings.stroke;
+    this.persistance = Math.floor(Math.random() * 100)+1;
 }
 
 function Player(){
@@ -345,7 +344,6 @@ function drawCone(unit){
     
     var W = settings.coneWidth;
     var L = settings.coneLength;
-
     obj = {
         ctx:ctx,
         unit:unit,
@@ -483,43 +481,55 @@ function rollDice(arr) {
                     // rng velocity set
                     arr[ID].velocity= Math.floor(Math.random() * settings.velocity)+.5;
 
-                    // // new collision base on gps
-                    // var collision = findNeighbors(arr[ID]);
-                    // if(collision.length){
-                    //     for (i of collision){
-                    //         if(arr[i] instanceof Unit){
-                    //             arr[ID].bool=!arr[i].bool;
-                    //             arr[ID].collision=1;
-                    //             arr[ID].wall = arr[i].direction;
-                    //             arr[ID].velocity = arr[i].velocity > 0 ? (arr[i].velocity*.75) : settings.velocity;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-
-                    // // new grouping base on gps
-                    // var grouping = findNeighbors(arr[ID],settings.groupingRange);
-                    // if(grouping.length){
-                    //     for (i of grouping){
-                    //         if(arr[i] instanceof Unit){
-                    //             arr[ID].direction = arr[i].direction;   
-                    //             arr[ID].decision=arr[i].decision;
-                    //             arr[ID].velocity=arr[i].velocity;
-                    //             arr[ID].bool=arr[i].bool;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-
-                    var pursuit = findNeighbors(arr[ID],10);
-                    for (i of pursuit){
-                        if(arr[i] instanceof Player){
-                            arr[ID].direction = pursuitCourse(arr[ID],arr[i]);
-                            console.log(arr[ID].direction);
-                            console.log('c:'+arr[ID].collision);
-                            break;
+                    // new collision base on gps
+                    var collision = findNeighbors(arr[ID]);
+                    if(collision.length){
+                        for (i of collision){
+                            if(arr[i] instanceof Unit){
+                                arr[ID].bool=!arr[i].bool;
+                                arr[ID].collision=1;
+                                arr[ID].wall = arr[i].direction;
+                                arr[ID].velocity = arr[i].velocity > 0 ? (arr[i].velocity*.75) : settings.velocity;
+                                break;
+                            }
                         }
                     }
+
+                    // new grouping base on gps
+                    var grouping = findNeighbors(arr[ID],settings.groupingRange);
+                    if(grouping.length){
+                        for (i of grouping){
+                            if(arr[i] instanceof Unit){
+                                arr[ID].direction = arr[i].direction;   
+                                arr[ID].decision=arr[i].decision;
+                                arr[ID].velocity=arr[i].velocity;
+                                arr[ID].bool=arr[i].bool;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    var pursuit = findNeighbors(arr[ID],settings.detectionRange);
+                    if(pursuit.length){
+                        for (i of pursuit){
+                            if(arr[i] instanceof Player){
+                                arr[ID].pursuit = true;
+                                break;
+                            }
+                        }
+                    }
+                    if(arr[ID].pursuit){
+                        // for testing only, though could make a diff sprite frame for in pursuit
+                        arr[ID].fill = 'red';
+                        pursuitCourse(arr[ID],player);
+                        arr[ID].persistance -= 1;
+                        if(arr[ID].persistance < 1){
+                            arr[ID].pursuit = false;
+                            arr[ID].fill = settings.fill;
+                            arr[ID].persistance = Math.floor(Math.random() * 100)+1;
+                        }
+                    }
+
                 }
                             
             }
@@ -531,7 +541,7 @@ function rollDice(arr) {
             }
             
             // negate player
-            if(arr[ID] instanceof Unit){
+            if(arr[ID] instanceof Unit && !arr[ID].pursuit){
                 // no direction set
                 if(arr[ID].direction==0){
                     movearr(ID,Math.floor(Math.random() * 4)+1,arr);
@@ -622,7 +632,7 @@ function timeLoop() {
     // global pos obj array
     gps={};
     drawUnitsLoop(unitInstances);
-    settings.fps = setTimeout(timeLoop, 1000 / 30);
+    settings.fps = setTimeout(timeLoop, 1000 / 60);
     //console.log(unitInstances[0]);
     //console.log(Object.keys(gps).length);
 }  
