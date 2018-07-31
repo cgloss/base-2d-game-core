@@ -3,10 +3,10 @@
 var settings ={
     width:960,
     height:640,
-    num:30,
+    num:10,
     imgHeight:55,
     imgWidth:20,
-    unitSpeed:2,
+    velocity:2,
     unitSize:4,
     hitSize:5,
     groupingRange:5,
@@ -93,26 +93,86 @@ function findNeighbors(single,proximity=1){
     var yArr = [];
     var neighborArr = [];
     var range = single.size*proximity;
+    var selfId = coordID(single);
     // build x coords arr
     for (var i = range; i >= 0; i--){
-        xArr.push(single.x-range+i);
+        xArr.push(single.x-range+(i*2));
     }
     // build y coords arr
     for (var i = range; i >= 0; i--){
-        yArr.push(single.y-range+i);
+        yArr.push(single.y-range+(i*2));
     }
+    // console.log(xArr);
+    // console.log(yArr);
     // build all possible combos of x y arrs
     for(var i = 0; i < xArr.length; i++){
          for(var j = 0; j < yArr.length; j++){
             var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
+            if(potentialMatch==selfId){
+                continue;
+            }
             // check is a coord ID exists in thei frame for this potential combo
             if(typeof gps[potentialMatch] != "undefined"){
                 neighborArr.push(gps[potentialMatch].index);
-            }
+            }        
          }
     }
     return neighborArr;
     
+}
+
+function pursuitCourse(self,target) {
+    // var distance = (target.x - self.x)+(target.y - self.y);
+    var futurePos = {x:null,y:null};
+    // todo create a list of direction commands for pursuit based on distance and future position
+    // console.log(distance);
+
+    switch(target.direction)
+    {
+    //up
+    case 1:
+      futurePos.y = target.y - (target.velocity*3);
+      if(target.bool){
+        futurePos.x = target.x + target.choice;
+      }
+      break;
+    //right
+    case 2:
+      futurePos.x = target.x + (target.velocity*3);
+      if(target.bool){
+        futurePos.y = target.y - target.choice;
+      }
+      break;
+    //down
+    case 3:
+      futurePos.y = target.y + (target.velocity*3);
+      if(target.bool){
+        futurePos.x = target.x - target.choice;
+      }
+      break;
+    //left
+    case 4:
+      futurePos.x = target.x - (target.velocity*3);
+      if(target.bool){
+        futurePos.y = target.y + target.choice;
+      }
+      break;
+    default:
+      //do nothing
+    }
+
+    if(futurePos.y < self.y){
+        return 1;
+    }
+    if(futurePos.x < self.x){
+        return 2;
+    }
+    if(futurePos.y > self.y){
+        return 3;
+    }
+    if(futurePos.x > self.x){
+        return 4;
+    }
 }
 
 // user interactions 
@@ -166,10 +226,10 @@ function findNeighbors(single,proximity=1){
 function onKeyDown(evt) {
     if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
         // console.log(player);
-        if (evt.keyCode == 38) Object.assign(player, {direction:1,unitSpeed:2}) // up
-        if (evt.keyCode == 39) Object.assign(player, {direction:2,unitSpeed:2}) // right
-        if (evt.keyCode == 40) Object.assign(player, {direction:3,unitSpeed:2}) // down
-        if (evt.keyCode == 37) Object.assign(player, {direction:4,unitSpeed:2}) // left
+        if (evt.keyCode == 38) Object.assign(player, {direction:1,velocity:2}) // up
+        if (evt.keyCode == 39) Object.assign(player, {direction:2,velocity:2}) // right
+        if (evt.keyCode == 40) Object.assign(player, {direction:3,velocity:2}) // down
+        if (evt.keyCode == 37) Object.assign(player, {direction:4,velocity:2}) // left
         evt.preventDefault();
     }
 }
@@ -177,7 +237,7 @@ function onKeyDown(evt) {
 //and unset them when the right or left key is released
 function onKeyUp(evt) {
     if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-        Object.assign(player, {unitSpeed:0});
+        Object.assign(player, {velocity:0});
     }
 }
 
@@ -190,7 +250,7 @@ function Unit(){
     this.x = Math.floor(Math.random() * settings.width);
     this.y = Math.floor(Math.random() * settings.height); 
     this.size = settings.unitSize;
-    this.unitSpeed = settings.unitSpeed;
+    this.velocity = settings.velocity;
     this.direction = 0; 
     this.decision = 0;
     this.collision = 0;
@@ -208,7 +268,7 @@ function Player(){
     this.x = settings.width/2;
     this.y = settings.height/2; 
     this.size = settings.unitSize*2;
-    this.unitSpeed = 0;
+    this.velocity = 0;
     this.direction = 0; 
     this.decision = 0;
     this.collision = 0;
@@ -420,34 +480,44 @@ function rollDice(arr) {
                 
                 //negate player
                 if(arr[ID] instanceof Unit){
-                    // rng unitSpeed set
-                    arr[ID].unitSpeed= Math.floor(Math.random() * settings.unitSpeed)+.5;
+                    // rng velocity set
+                    arr[ID].velocity= Math.floor(Math.random() * settings.velocity)+.5;
 
-                    // new collision base on gps
-                    var collision = findNeighbors(arr[ID]);
-                    if(collision.length){
-                        for (i in collision){
-                            if(arr[i] instanceof Unit){
-                                arr[ID].bool=!arr[i].bool;
-                                arr[ID].collision=1;
-                                arr[ID].wall = arr[i].direction;
-                                arr[ID].unitSpeed = arr[i].unitSpeed > 0 ? (arr[i].unitSpeed*.75) : settings.unitSpeed;
-                                break;
-                            }
-                        }
-                    }
+                    // // new collision base on gps
+                    // var collision = findNeighbors(arr[ID]);
+                    // if(collision.length){
+                    //     for (i of collision){
+                    //         if(arr[i] instanceof Unit){
+                    //             arr[ID].bool=!arr[i].bool;
+                    //             arr[ID].collision=1;
+                    //             arr[ID].wall = arr[i].direction;
+                    //             arr[ID].velocity = arr[i].velocity > 0 ? (arr[i].velocity*.75) : settings.velocity;
+                    //             break;
+                    //         }
+                    //     }
+                    // }
 
-                    // new grouping base on gps
-                    var grouping = findNeighbors(arr[ID],settings.groupingRange);
-                    if(grouping.length){
-                        for (i in grouping){
-                            if(arr[i] instanceof Unit){
-                                arr[ID].direction = arr[i].direction;   
-                                arr[ID].decision=arr[i].decision;
-                                arr[ID].unitSpeed=arr[i].unitSpeed;
-                                arr[ID].bool=arr[i].bool;
-                                break;
-                            }
+                    // // new grouping base on gps
+                    // var grouping = findNeighbors(arr[ID],settings.groupingRange);
+                    // if(grouping.length){
+                    //     for (i of grouping){
+                    //         if(arr[i] instanceof Unit){
+                    //             arr[ID].direction = arr[i].direction;   
+                    //             arr[ID].decision=arr[i].decision;
+                    //             arr[ID].velocity=arr[i].velocity;
+                    //             arr[ID].bool=arr[i].bool;
+                    //             break;
+                    //         }
+                    //     }
+                    // }
+
+                    var pursuit = findNeighbors(arr[ID],10);
+                    for (i of pursuit){
+                        if(arr[i] instanceof Player){
+                            arr[ID].direction = pursuitCourse(arr[ID],arr[i]);
+                            console.log(arr[ID].direction);
+                            console.log('c:'+arr[ID].collision);
+                            break;
                         }
                     }
                 }
@@ -499,7 +569,7 @@ function movearr(ID,dir,arr) {
     {
     //up
     case 1:
-      arr[ID].y -= arr[ID].unitSpeed;
+      arr[ID].y -= arr[ID].velocity;
       if(arr[ID].bool){
       arr[ID].x += arr[ID].choice;
       }
@@ -507,7 +577,7 @@ function movearr(ID,dir,arr) {
       break;
     //right
     case 2:
-      arr[ID].x += arr[ID].unitSpeed;
+      arr[ID].x += arr[ID].velocity;
       if(arr[ID].bool){
       arr[ID].y -= arr[ID].choice;
       }
@@ -515,7 +585,7 @@ function movearr(ID,dir,arr) {
       break;
     //down
     case 3:
-      arr[ID].y += arr[ID].unitSpeed;
+      arr[ID].y += arr[ID].velocity;
       if(arr[ID].bool){
       arr[ID].x -= arr[ID].choice;
       }
@@ -523,7 +593,7 @@ function movearr(ID,dir,arr) {
       break;
     //left
     case 4:
-      arr[ID].x -= arr[ID].unitSpeed;
+      arr[ID].x -= arr[ID].velocity;
       if(arr[ID].bool){
       arr[ID].y += arr[ID].choice;
       }
@@ -552,7 +622,7 @@ function timeLoop() {
     // global pos obj array
     gps={};
     drawUnitsLoop(unitInstances);
-    settings.fps = setTimeout(timeLoop, 1000 / 60);
+    settings.fps = setTimeout(timeLoop, 1000 / 30);
     //console.log(unitInstances[0]);
     //console.log(Object.keys(gps).length);
 }  
