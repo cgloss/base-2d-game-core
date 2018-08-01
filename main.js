@@ -3,7 +3,7 @@
 var settings ={
     width:960,
     height:640,
-    num:12,
+    num:10,
     imgHeight:55,
     imgWidth:20,
     velocity:2,
@@ -548,7 +548,7 @@ function rollDice(arr) {
                 }else if(arr[ID].collision==0){
                     movearr(ID,arr[ID].direction,arr);  
                 }
-            }else{
+            }else{ // dont add check for collision without accounting for the clearing of the collided 
                 movearr(ID,arr[ID].direction,arr);
             }
         }
@@ -632,8 +632,7 @@ function timeLoop() {
     // global pos obj array
     gps={};
     drawUnitsLoop(unitInstances);
-    settings.fps = setTimeout(timeLoop, 1000 / 60);
     //console.log(unitInstances[0]);
     //console.log(Object.keys(gps).length);
-}  
-timeLoop();
+} 
+let init = setInterval(timeLoop, 1000 / 60);

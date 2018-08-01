@@ -13,4 +13,5 @@ canvas{
     border: 1px solid black;
     background: #333;
     display:block;
+/*    transform: perspective(20em) rotateX(30deg);*/
 }
