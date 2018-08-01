@@ -1,305 +1,255 @@
 
-// initial settings
-var settings ={
-    width:960,
-    height:640,
-    num:10,
-    imgHeight:55,
-    imgWidth:20,
-    velocity:2,
-    unitSize:4,
-    hitSize:5,
-    groupingRange:5,
-    detectionRange:12,
-    coneLength: 25,
-    coneWidth: 10,
-    fill: 'rgba(186, 85, 211, .9)',
-    stroke: 'rgba(153, 50, 204, .1)',
+class Core {
+    constructor(canvas) {
+        this.settings ={
+            width:960,
+            height:640,
+            num:10,
+            imgHeight:55,
+            imgWidth:20,
+            velocity:2,
+            unitSize:4,
+            hitSize:5,
+            groupingRange:5,
+            detectionRange:12,
+            coneLength: 25,
+            coneWidth: 10,
+            fill: 'rgba(186, 85, 211, .9)',
+            stroke: 'rgba(153, 50, 204, .1)',
+        };
+
+        this.c = canvas;
+        // 2d graphic context for canvas
+        this.ctx = this.c.getContext('2d'); 
+        // apply settings to canvas
+        this.c.width = this.settings.width;  
+        this.c.height = this.settings.height;
+
+        this.unitInstances = new Array();
+
+        // variable operators
+        this.operators = {
+            '>': function(a, b){ return a > b; },
+            '<': function(a, b){ return a < b; }
+            // ...
+        };
+    }
+
+    isOdd(num){ return num % 2; };
+
 }
 
-// instances array
-unitInstances=[];
+class Unit {
+    // will need to pass thes unitarrays or gps into this or will fail
+    findNeighbors(single,proximity=1){
+        var xArr = [];
+        var yArr = [];
+        var neighborArr = [];
+        var range = (single.size*proximity)*2;
+        var selfId = coordID(single);
+        // build x coords arr
+        for (var i = range; i >= 0; i--){
+            xArr.push(single.x-range+i);
+        }
+        // build y coords arr
+        for (var i = range; i >= 0; i--){
+            yArr.push(single.y-range+i);
+        }
+        // build all possible combos of x y arrs
+        for(var i = 0; i < xArr.length; i++){
+             for(var j = 0; j < yArr.length; j++){
+                var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
+                if(potentialMatch==selfId){
+                    continue;
+                }
+                // check is a coord ID exists
+                if(typeof gps[potentialMatch] != "undefined"){
+                    neighborArr.push(gps[potentialMatch].index);
+                }        
+             }
+        }
+        return neighborArr;   
+    };
 
-//canvas itself
-c = document.getElementsByTagName ('canvas')[0];  
-
-// variable operators
-var operators = {
-    '>': function(a, b) { return a > b; },
-    '<': function(a, b) { return a < b; }
-    // ...
-};
-
-// odd chk
-function isOdd(num) { return num % 2;}
-
-//and two-dimensional graphic context of the canvas
-ctx = c.getContext('2d');  
-
-// apply settings to canvas
-c.width = settings.width;  
-c.height = settings.height;
-
-//helper functions
-c.addEventListener("mousedown", unitInteraction, false);
-
-function unitInteraction(e){  
-    var x = e.offsetX;
-    var y = e.offsetY;
-    var clicked = findNearest({x:x,y:y});
-    console.log(clicked);
-}
-
-
-function findNeighbors(single,proximity=1){
-    //var xyCoords = coordID(single).split(/x|y/).filter(Boolean);
-    var xArr = [];
-    var yArr = [];
-    var neighborArr = [];
-    var range = (single.size*proximity)*2;
-    var selfId = coordID(single);
-    // build x coords arr
-    for (var i = range; i >= 0; i--){
-        xArr.push(single.x-range+i);
-    }
-    // build y coords arr
-    for (var i = range; i >= 0; i--){
-        yArr.push(single.y-range+i);
-    }
-    // console.log(xArr);
-    // console.log(yArr);
-    // build all possible combos of x y arrs
-    for(var i = 0; i < xArr.length; i++){
-         for(var j = 0; j < yArr.length; j++){
-            var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
-            if(potentialMatch==selfId){
-                continue;
-            }
-            // check is a coord ID exists in thei frame for this potential combo
-            if(typeof gps[potentialMatch] != "undefined"){
-                neighborArr.push(gps[potentialMatch].index);
-            }        
-         }
-    }
-    return neighborArr;
-    
-}
-
-function findNearest(location){
-    var xArr = [];
-    var yArr = [];
-    var range = 20;
-    var selfId = coordID(location);
-    // build x coords arr
-    for (var i = range; i >= 0; i--){
-        xArr.push(location.x-range+i);
-    }
-    // build y coords arr
-    for (var i = range; i >= 0; i--){
-        yArr.push(location.y-range+i);
-    }
-    for(var i = 0; i < xArr.length; i++){
-         for(var j = 0; j < yArr.length; j++){
-            var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
-            // check is a coord ID exists in thei frame for this potential combo
-            if(typeof gps[potentialMatch] != "undefined"){
-                return gps[potentialMatch];
-            }        
-         }
-    }    
-}
-
-function checkProximity(single,location){
-    let distX =  Math.abs(single.x - location.x);
-    let distY =  Math.abs(single.y - location.y);
-    return Math.ceil(distX + distY);  
-}
-
-function plotCourse(single,location){
-    // could add a check for which of the last, in order to ensure the course is more direct rather then boxy
-    if(location.y < single.y){
-        single.direction = 1;
-        single.y -= single.velocity*.05;
-    }
-    if(location.x < single.x){
-        single.direction = 4;
-        single.x -= single.velocity*.05;
-    }
-    if(location.y > single.y){
-        single.direction = 3;
-        single.y += single.velocity*.05;
-    }
-    if(location.x > single.x){
-        single.direction = 2;
-        single.x += single.velocity*.05;
-    }
-}
-
-function pursuitCourse(self,target) {
-    // var distance = (target.x - self.x)+(target.y - self.y);
-    var futurePos = {x:null,y:null};
-    // todo create a list of direction commands for pursuit based on distance and future position
-    // console.log(distance);
-
-    switch(target.direction)
-    {
-    //up
-    case 1:
-        futurePos.y = target.y - (target.velocity*2);
-        futurePos.x = target.x + target.choice;
-      break;
-    //right
-    case 2:
-        futurePos.x = target.x + (target.velocity*2);
-        futurePos.y = target.y - target.choice;
-      break;
-    //down
-    case 3:
-        futurePos.y = target.y + (target.velocity*2);
-        futurePos.x = target.x - target.choice;
-      break;
-    //left
-    case 4:
-        futurePos.x = target.x - (target.velocity*2);
-        futurePos.y = target.y + target.choice;
-      break;
-    default:
-        futurePos.x = target.x;
-        futurePos.y = target.y;
+    findNearest(location){
+        var xArr = [];
+        var yArr = [];
+        var range = 20;
+        var selfId = coordID(location);
+        // build x coords arr
+        for (var i = range; i >= 0; i--){
+            xArr.push(location.x-range+i);
+        }
+        // build y coords arr
+        for (var i = range; i >= 0; i--){
+            yArr.push(location.y-range+i);
+        }
+        for(var i = 0; i < xArr.length; i++){
+             for(var j = 0; j < yArr.length; j++){
+                var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
+                // check is a coord ID exists in thei frame for this potential combo
+                if(typeof gps[potentialMatch] != "undefined"){
+                    return gps[potentialMatch];
+                }        
+             }
+        }    
     }
 
-    if(futurePos.y < self.y){
-        self.direction = 1;
-        self.y -= self.velocity + target.velocity;
+    checkProximity(single,location){
+        let distX =  Math.abs(single.x - location.x);
+        let distY =  Math.abs(single.y - location.y);
+        return Math.ceil(distX + distY);  
     }
-    if(futurePos.x < self.x){
-        self.direction = 4;
-        self.x -= self.velocity + target.velocity;
+
+    plotCourse(single,location){
+        // could add a check for which of the last, in order to ensure the course is more direct rather then boxy
+        if(location.y < single.y){
+            single.direction = 1;
+            single.y -= single.velocity*.05;
+        }
+        if(location.x < single.x){
+            single.direction = 4;
+            single.x -= single.velocity*.05;
+        }
+        if(location.y > single.y){
+            single.direction = 3;
+            single.y += single.velocity*.05;
+        }
+        if(location.x > single.x){
+            single.direction = 2;
+            single.x += single.velocity*.05;
+        }
     }
-    if(futurePos.y > self.y){
-        self.direction = 3;
-        self.y += self.velocity + target.velocity;
-    }
-    if(futurePos.x > self.x){
-        self.direction = 2;
-        self.x += self.velocity + target.velocity;
-    }
-    
-}
 
-// user interactions 
-// c.onmousemove = function(e) {
-//     // check if user is drawling or spawning
-//     if (!c.isDrawing && !c.isSpawning) {
-//        return;
-//     }
-//     var single = new Unit;
-//     single.x = e.pageX - this.offsetLeft;
-//     single.y = e.pageY - this.offsetTop;
-//     single.bool = 0;
-//     if(e.movementY < 0){
-//         single.direction = 1;
-//     }
-//     // todo need dir modifiers for bool and choice based on movement
-//     // will require +2 for each potential choice 1 or -1 modifier
+    pursuitCourse(self,target) {
+        // var distance = (target.x - self.x)+(target.y - self.y);
+        var futurePos = {x:null,y:null};
+        // todo create a list of direction commands for pursuit based on distance and future position
+        // console.log(distance);
 
-//     if(e.movementX > 0){
-//         single.direction = 2;
-//     }
-//     if(e.movementY > 0){
-//         single.direction = 3;
-//     }
-//     if(e.movementX < 0){
-//         single.direction = 4;
-//     }
-//     if(c.isDrawing){
-//         c.isSpawning = false;
-//         clearTimeout(heldTimeout);
-//         wallifyUnit(single);
-//     }
-//     unitInstances.push(single);
+        switch(target.direction)
+        {
+        //up
+        case 1:
+            futurePos.y = target.y - (target.velocity*2);
+            futurePos.x = target.x + target.choice;
+          break;
+        //right
+        case 2:
+            futurePos.x = target.x + (target.velocity*2);
+            futurePos.y = target.y - target.choice;
+          break;
+        //down
+        case 3:
+            futurePos.y = target.y + (target.velocity*2);
+            futurePos.x = target.x - target.choice;
+          break;
+        //left
+        case 4:
+            futurePos.x = target.x - (target.velocity*2);
+            futurePos.y = target.y + target.choice;
+          break;
+        default:
+            futurePos.x = target.x;
+            futurePos.y = target.y;
+        }
 
-// }
-
-// c.onmousedown = function(e) {
-//     c.isDrawing = true;
-//     heldTimeout = setTimeout(function(){
-//         c.isDrawing = false;
-//         c.isSpawning = true;
-//     }, 1000);
-// };
-// c.onmouseup = function(e) {
-//     c.isDrawing = false;
-//     c.isSpawning = false;
-//     clearTimeout(heldTimeout);
-// };
-
-//set rightDown or leftDown if the right or left keys are down
-function onKeyDown(evt) {
-    if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-        // console.log(player);
-        if (evt.keyCode == 38) Object.assign(player, {direction:1,velocity:2}) // up
-        if (evt.keyCode == 39) Object.assign(player, {direction:2,velocity:2}) // right
-        if (evt.keyCode == 40) Object.assign(player, {direction:3,velocity:2}) // down
-        if (evt.keyCode == 37) Object.assign(player, {direction:4,velocity:2}) // left
-        evt.preventDefault();
+        if(futurePos.y < self.y){
+            self.direction = 1;
+            self.y -= self.velocity + target.velocity;
+        }
+        if(futurePos.x < self.x){
+            self.direction = 4;
+            self.x -= self.velocity + target.velocity;
+        }
+        if(futurePos.y > self.y){
+            self.direction = 3;
+            self.y += self.velocity + target.velocity;
+        }
+        if(futurePos.x > self.x){
+            self.direction = 2;
+            self.x += self.velocity + target.velocity;
+        }     
     }
 }
 
-//and unset them when the right or left key is released
-function onKeyUp(evt) {
-    if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-        Object.assign(player, {velocity:0});
+class Player extends Unit{
+    constructor(C){
+        super();
+        this.x = C.settings.width/2;
+        this.y = C.settings.height/2; 
+        this.size = C.settings.unitSize*2;
+        this.velocity = 0;
+        this.direction = 0; 
+        this.decision = 0;
+        this.collision = 0;
+        this.bool = 0;
+        this.choice = 0;
+        this.decisionLog = [];
+        // bool set to player type
+        this.type = 1;
+        this.frame = 0;
+        this.animrate = 2;
+        this.fill = 'rgba(18, 173, 42, 1)';
+        this.stroke = C.settings.stroke;
+    }
+}
+
+class Gremlin extends Unit{
+    constructor(C){
+        super();
+        this.x = Math.floor(Math.random() * C.settings.width);
+        this.y = Math.floor(Math.random() * C.settings.height); 
+        this.size = C.settings.unitSize;
+        this.velocity = C.settings.velocity;
+        this.direction = 0; 
+        this.decision = 0;
+        this.collision = 0;
+        this.bool = (Math.floor(Math.random() * 2) == 0);
+        this.choice = Math.floor(Math.random()*2) == 1 ? 1 : -1;
+        this.decisionLog = [];
+        this.startPos = {x:this.x,y:this.y};
+        this.leash = 200;
+        this.frame = 0;
+        this.animrate = 2;
+        this.fill = C.settings.fill;
+        this.stroke = C.settings.stroke;
+        this.persistance = Math.floor(Math.random() * 100)+1;
+    }
+}
+
+class Controls {
+    constructor(){
+        document.addEventListener("keydown", this.onKeyDown);
+        document.addEventListener("keyup", this.onKeyUp);
+    }
+    //set rightDown or leftDown if the right or left keys are down
+    onKeyDown(evt) {
+        if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
+            // console.log(player);
+            if (evt.keyCode == 38) Object.assign(player, {direction:1,velocity:2}) // up
+            if (evt.keyCode == 39) Object.assign(player, {direction:2,velocity:2}) // right
+            if (evt.keyCode == 40) Object.assign(player, {direction:3,velocity:2}) // down
+            if (evt.keyCode == 37) Object.assign(player, {direction:4,velocity:2}) // left
+            evt.preventDefault();
+        }
+    }
+
+    //and unset them when the right or left key is released
+    onKeyUp(evt) {
+        if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
+            Object.assign(player, {velocity:0});
+        }
     }
 }
 
 
-document.addEventListener("keydown", onKeyDown);
-document.addEventListener("keyup", onKeyUp);
-
-
-function Unit(){
-    this.x = Math.floor(Math.random() * settings.width);
-    this.y = Math.floor(Math.random() * settings.height); 
-    this.size = settings.unitSize;
-    this.velocity = settings.velocity;
-    this.direction = 0; 
-    this.decision = 0;
-    this.collision = 0;
-    this.bool = (Math.floor(Math.random() * 2) == 0);
-    this.choice = Math.floor(Math.random()*2) == 1 ? 1 : -1;
-    this.decisionLog = [];
-    this.startPos = {x:this.x,y:this.y};
-    this.leash = 200;
-    this.frame = 0;
-    this.animrate = 2;
-    this.fill = settings.fill;
-    this.stroke = settings.stroke;
-    this.persistance = Math.floor(Math.random() * 100)+1;
-}
-
-function Player(){
-    this.x = settings.width/2;
-    this.y = settings.height/2; 
-    this.size = settings.unitSize*2;
-    this.velocity = 0;
-    this.direction = 0; 
-    this.decision = 0;
-    this.collision = 0;
-    this.bool = 0;
-    this.choice = 0;
-    this.decisionLog = [];
-    // bool set to player type
-    this.type = 1;
-    this.frame = 0;
-    this.animrate = 2;
-    this.fill = 'rgba(18, 173, 42, 1)';
-    this.stroke = settings.stroke;
-}
+let core = new Core(document.getElementsByTagName ('canvas')[0]);
+let userControls = new Controls();
 
 function genunitInstances(){
     for(var i=0;i<settings.num;i++){
-        unitInstances.push(new Unit);
+        core.unitInstances.push(new Gremlin(core));
     }
 };
 
@@ -645,9 +595,9 @@ function movearr(ID,dir,arr) {
 };
 
 // spawn player
-unitInstances.push(new Player);
+core.unitInstances.push(new Player(this));
 // id the player for all use
-let player = unitInstances.find(unit => unit instanceof Player);
+let player = core.unitInstances.find(unit => unit instanceof Player);
 genunitInstances();
 // global pos obj array
 gps={};
@@ -663,3 +613,13 @@ function timeLoop() {
     //console.log(Object.keys(gps).length);
 } 
 let init = setInterval(timeLoop, 1000 / 30);
+
+// //helper functions
+// core.c.addEventListener("mousedown", unitInteraction, false);
+
+// function unitInteraction(e){  
+//     var x = e.offsetX;
+//     var y = e.offsetY;
+//     var clicked = findNearest({x:x,y:y});
+//     console.log(clicked);
+// }
