@@ -11,11 +11,8 @@ var settings ={
     hitSize:5,
     groupingRange:5,
     detectionRange:12,
-    attnSpan:800,
-    attnSpanMin:300,
     coneLength: 25,
     coneWidth: 10,
-    fingerSize: 10,
     fill: 'rgba(186, 85, 211, .9)',
     stroke: 'rgba(153, 50, 204, .1)',
 }
@@ -44,63 +41,30 @@ c.width = settings.width;
 c.height = settings.height;
 
 //helper functions
-// c.addEventListener("mousedown", unitInteraction, false);
+c.addEventListener("mousedown", unitInteraction, false);
 
-// function unitInteraction(e){  
-//     var x = e.pageX - this.offsetLeft;
-//     var y = e.pageY - this.offsetTop;
-//     var found = false;
-//     // todo 
-//     // this should really use the global cordinate system to determine finger click
-//     for (var ID=0;ID<unitInstances.length;ID++){
-//         if(unitInstances[ID].x<=x+settings.fingerSize && unitInstances[ID].x>=x-settings.fingerSize && unitInstances[ID].y<=y+settings.fingerSize && unitInstances[ID].y>=y-settings.fingerSize){
-//             found = unitInstances[ID];
-//             break;
-//         }
-//     }
-//     if(found){
-//         var unitNeighbors = findNeighbors(unitInstances[ID]);
-        
-//         for(var i = unitNeighbors.length - 1; i >= 0; i--) {
-//             if(typeof unitInstances[unitNeighbors[i]] != 'undefined'){
-//                swarmifyUnit(unitInstances[unitNeighbors[i]]);
-//             }
-//         }
-//     }
-// }
+function unitInteraction(e){  
+    var x = e.offsetX;
+    var y = e.offsetY;
+    var clicked = findNearest({x:x,y:y});
+    console.log(clicked);
+}
 
-// function wallifyUnit(single){
-//     single.speed = 0;
-//     single.size = settings.unitSize*4;
-//     single.fill = '#fff';
-//     single.stroke = '#fff';
-//     single.dead = true;
-// }
-
-// // todo 
-// // should have been able to just reinitialize the unit rather then explicitly set
-// function swarmifyUnit(single){
-//     single.speed = 1;
-//     single.size = settings.unitSize;
-//     single.fill = settings.fill;
-//     single.stroke = settings.stroke;
-//     single.dead = false;
-// }
 
 function findNeighbors(single,proximity=1){
     //var xyCoords = coordID(single).split(/x|y/).filter(Boolean);
     var xArr = [];
     var yArr = [];
     var neighborArr = [];
-    var range = single.size*proximity;
+    var range = (single.size*proximity)*2;
     var selfId = coordID(single);
     // build x coords arr
     for (var i = range; i >= 0; i--){
-        xArr.push(single.x-range+(i*2));
+        xArr.push(single.x-range+i);
     }
     // build y coords arr
     for (var i = range; i >= 0; i--){
-        yArr.push(single.y-range+(i*2));
+        yArr.push(single.y-range+i);
     }
     // console.log(xArr);
     // console.log(yArr);
@@ -119,6 +83,56 @@ function findNeighbors(single,proximity=1){
     }
     return neighborArr;
     
+}
+
+function findNearest(location){
+    var xArr = [];
+    var yArr = [];
+    var range = 20;
+    var selfId = coordID(location);
+    // build x coords arr
+    for (var i = range; i >= 0; i--){
+        xArr.push(location.x-range+i);
+    }
+    // build y coords arr
+    for (var i = range; i >= 0; i--){
+        yArr.push(location.y-range+i);
+    }
+    for(var i = 0; i < xArr.length; i++){
+         for(var j = 0; j < yArr.length; j++){
+            var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
+            // check is a coord ID exists in thei frame for this potential combo
+            if(typeof gps[potentialMatch] != "undefined"){
+                return gps[potentialMatch];
+            }        
+         }
+    }    
+}
+
+function checkProximity(single,location){
+    let distX =  Math.abs(single.x - location.x);
+    let distY =  Math.abs(single.y - location.y);
+    return Math.ceil(distX + distY);  
+}
+
+function plotCourse(single,location){
+    // could add a check for which of the last, in order to ensure the course is more direct rather then boxy
+    if(location.y < single.y){
+        single.direction = 1;
+        single.y -= single.velocity*.05;
+    }
+    if(location.x < single.x){
+        single.direction = 4;
+        single.x -= single.velocity*.05;
+    }
+    if(location.y > single.y){
+        single.direction = 3;
+        single.y += single.velocity*.05;
+    }
+    if(location.x > single.x){
+        single.direction = 2;
+        single.x += single.velocity*.05;
+    }
 }
 
 function pursuitCourse(self,target) {
@@ -255,7 +269,8 @@ function Unit(){
     this.bool = (Math.floor(Math.random() * 2) == 0);
     this.choice = Math.floor(Math.random()*2) == 1 ? 1 : -1;
     this.decisionLog = [];
-    this.type = 0;
+    this.startPos = {x:this.x,y:this.y};
+    this.leash = 200;
     this.frame = 0;
     this.animrate = 2;
     this.fill = settings.fill;
@@ -518,6 +533,7 @@ function rollDice(arr) {
                             }
                         }
                     }
+                    // handle unit changes and persistance of pursuit
                     if(arr[ID].pursuit){
                         // for testing only, though could make a diff sprite frame for in pursuit
                         arr[ID].fill = 'red';
@@ -533,24 +549,35 @@ function rollDice(arr) {
                 }
                             
             }
-            
+
             // collider bool switch
-            if(arr[ID].collision > 1 && arr[ID].wall != arr[ID].direction){
+            if(arr[ID].collision >= 1 && arr[ID].wall != arr[ID].direction){
                 arr[ID].bool=!arr[ID].bool;
                 movearr(ID,arr[ID].direction,arr);
+                continue;
             }
             
             // negate player
             if(arr[ID] instanceof Unit && !arr[ID].pursuit){
+                
+                // // handle start position leashing
+                // if(checkProximity(arr[ID],arr[ID].startPos)>arr[ID].leash){
+                //     plotCourse(arr[ID],arr[ID].startPos);
+                //     movearr(ID,arr[ID].direction,arr);
+                //     continue;
+                // }
+
                 // no direction set
                 if(arr[ID].direction==0){
                     movearr(ID,Math.floor(Math.random() * 4)+1,arr);
                 }else if(arr[ID].collision==0){
                     movearr(ID,arr[ID].direction,arr);  
                 }
+                
             }else{ // dont add check for collision without accounting for the clearing of the collided 
                 movearr(ID,arr[ID].direction,arr);
             }
+
         }
     }
 }
@@ -635,4 +662,4 @@ function timeLoop() {
     //console.log(unitInstances[0]);
     //console.log(Object.keys(gps).length);
 } 
-let init = setInterval(timeLoop, 1000 / 60);
+let init = setInterval(timeLoop, 1000 / 30);
