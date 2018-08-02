@@ -57,8 +57,110 @@ class Core {
 
 }
 
-class Unit {
+class Render {
     constructor(C){
+        this.C = C;
+    }
+    render(){
+        this.C.ctx.beginPath();
+        this.C.ctx.moveTo(this.x, this.y - this.size);
+        this.C.ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI, false);
+        this.C.ctx.lineWidth = this.size;    
+        this.C.ctx.strokeStyle = this.stroke;
+        this.C.ctx.stroke();
+        this.C.ctx.fillStyle = this.fill;    
+        this.C.ctx.fill();
+        this.C.ctx.closePath();
+        if(!this.dead){
+            this.drawCone(this);
+        }
+        //var img=new Image();
+        
+        // assign default sprite
+        //img.src = "path/to/sprite";
+        
+        //sprite drw animation
+        // if(!unit.dead){
+        //     ctx.drawImage(img,arr[ID].frame,0,20,60,arr[ID].x-(settings.imgWidth/2),arr[ID].y-settings.imgHeight,20,60);
+        //     unit.animrate = (unit.animrate) ? unit.animrate-1 : 2;
+        //     if(!unit.animrate){
+        //         unit.frame = (unit.frame<60) ? unit.frame+20 : 0;
+        //     }
+        // }
+    }
+    drawCone(){
+        // detectionRange cone draw
+        this.C.ctx.beginPath();
+        this.C.ctx.moveTo(this.x, this.y);
+        
+        let obj = {
+            W:this.C.settings.coneWidth,
+            L:this.C.settings.coneLength,
+            align: 1
+        };
+
+        switch(this.direction)
+            {
+            //up
+            case 1:
+                // assign up sprite
+                //img.src = "lib/img/mysprites_tileset_walk_up.png";
+                break;
+            //right
+            case 2:
+                obj.align = -1;
+                if(this.choice == 1 && this.bool){
+                    obj.align = 1;
+                }
+                // assign right sprite
+                //img.src = "lib/img/mysprites_tileset_walk_right.png";
+              break;
+            //down
+            case 3:
+                obj.align = -1;
+                // assign down sprite
+                //img.src = "lib/img/mysprites_tileset_walk_down.png";
+              break;
+            //left
+            case 4:
+                if(this.choice == 1 && this.bool){
+                    obj.align = -1;
+                }
+                // assign left sprite
+                //img.src = "lib/img/mysprites_tileset_walk_left.png";
+              break;
+            default:
+              //do nothing
+        }
+        this.conePath(obj);
+
+        this.C.ctx.lineTo(this.x, this.y);  
+        this.C.ctx.fillStyle = 'rgba(255, 255, 0, .05)';
+        this.C.ctx.fill();
+        
+        this.C.ctx.lineWidth = this.size;
+        this.C.ctx.strokeStyle = 'rgba(255, 255, 0, .09)';
+        this.C.ctx.stroke();
+        this.C.ctx.closePath();
+    }
+
+    conePath(obj){
+        if(this.bool){
+            this.C.ctx.lineTo(this.x+(obj.L * this.choice) * obj.align, this.y+(obj.W * (obj.align * -1)));
+            this.C.ctx.lineTo(this.x+(obj.W * this.choice) * obj.align, this.y+(obj.L * (obj.align * -1)));
+        }else if(core.isOdd(this.direction)){
+            this.C.ctx.lineTo(this.x+(obj.W * (obj.align * -1)), this.y+(obj.L * (obj.align * -1)));
+            this.C.ctx.lineTo(this.x+(obj.W * obj.align), this.y+(obj.L * (obj.align * -1)));
+        }else{
+            this.C.ctx.lineTo(this.x+(obj.L * (obj.align * -1)), this.y+(obj.W * (obj.align * -1)));
+            this.C.ctx.lineTo(this.x+(obj.L * (obj.align * -1)), this.y+(obj.W * obj.align));
+        }
+    }
+}
+
+class Unit extends Render{
+    constructor(C){
+        super(C);
     }
 
     // will need to pass thes unitarrays or gps into this or will fail
@@ -177,7 +279,7 @@ class Unit {
 
 class Player extends Unit{
     constructor(C){
-        super();
+        super(C);
         this.x = C.settings.width/2;
         this.y = C.settings.height/2; 
         this.size = C.settings.unitSize*2;
@@ -199,7 +301,7 @@ class Player extends Unit{
 
 class Gremlin extends Unit{
     constructor(C){
-        super();
+        super(C);
         this.x = Math.floor(Math.random() * C.settings.width);
         this.y = Math.floor(Math.random() * C.settings.height); 
         this.size = C.settings.unitSize;
@@ -245,152 +347,42 @@ class Controls {
     }
 }
 
-
 var core = new Core(document.getElementsByTagName ('canvas')[0]);
 let userControls = new Controls();
 
-function drawUnit(unit){
-    //draw a units
-    core.ctx.beginPath();
-        
-    core.ctx.moveTo(unit.x, unit.y - unit.size);
-      
-    core.ctx.arc(unit.x, unit.y, unit.size, 0, 2 * Math.PI, false);
-        
-    core.ctx.lineWidth = unit.size;    
-    core.ctx.strokeStyle = unit.stroke;
-    core.ctx.stroke();
-
-    core.ctx.fillStyle = unit.fill;    
-    core.ctx.fill();
-    core.ctx.closePath();
-    
-    if(!unit.dead){
-        drawCone(unit);
-    }
-
-    //var img=new Image();
-    
-    // assign default sprite
-    //img.src = "path/to/sprite";
-    
-    //sprite drw animation
-    // if(!unit.dead){
-    //     ctx.drawImage(img,arr[ID].frame,0,20,60,arr[ID].x-(settings.imgWidth/2),arr[ID].y-settings.imgHeight,20,60);
-    //     unit.animrate = (unit.animrate) ? unit.animrate-1 : 2;
-    //     if(!unit.animrate){
-    //         unit.frame = (unit.frame<60) ? unit.frame+20 : 0;
-    //     }
-    // }
-
-}
-
-function conePath(obj){
-    if(obj.unit.bool){
-        obj.ctx.lineTo(obj.unit.x+(obj.L * obj.unit.choice) * obj.align, obj.unit.y+(obj.W * (obj.align * -1)));
-        obj.ctx.lineTo(obj.unit.x+(obj.W * obj.unit.choice) * obj.align, obj.unit.y+(obj.L * (obj.align * -1)));
-    }else if(core.isOdd(obj.unit.direction)){
-        obj.ctx.lineTo(obj.unit.x+(obj.W * (obj.align * -1)), obj.unit.y+(obj.L * (obj.align * -1)));
-        obj.ctx.lineTo(obj.unit.x+(obj.W * obj.align), obj.unit.y+(obj.L * (obj.align * -1)));
-    }else{
-        obj.ctx.lineTo(obj.unit.x+(obj.L * (obj.align * -1)), obj.unit.y+(obj.W * (obj.align * -1)));
-        obj.ctx.lineTo(obj.unit.x+(obj.L * (obj.align * -1)), obj.unit.y+(obj.W * obj.align));
-    }
-}
-
-function drawCone(unit){
-    // detectionRange cone draw
-    core.ctx.beginPath();
-    core.ctx.moveTo(unit.x, unit.y);
-    
-    var W = core.settings.coneWidth;
-    var L = core.settings.coneLength;
-    obj = {
-        ctx:core.ctx,
-        unit:unit,
-        W:W,
-        L:L,
-        align: 1
-    };
-
-    switch(unit.direction)
-        {
-        //up
-        case 1:
-            // assign up sprite
-            //img.src = "lib/img/mysprites_tileset_walk_up.png";
-            break;
-        //right
-        case 2:
-            obj.align = -1;
-            if(unit.choice == 1 && unit.bool){
-                obj.align = 1;
-            }
-            // assign right sprite
-            //img.src = "lib/img/mysprites_tileset_walk_right.png";
-          break;
-        //down
-        case 3:
-            obj.align = -1;
-            // assign down sprite
-            //img.src = "lib/img/mysprites_tileset_walk_down.png";
-          break;
-        //left
-        case 4:
-            if(unit.choice == 1 && unit.bool){
-                obj.align = -1;
-            }
-            // assign left sprite
-            //img.src = "lib/img/mysprites_tileset_walk_left.png";
-          break;
-        default:
-          //do nothing
-    }
-    conePath(obj);
-
-    core.ctx.lineTo(unit.x, unit.y);  
-    core.ctx.fillStyle = 'rgba(255, 255, 0, .05)';
-    core.ctx.fill();
-    
-    core.ctx.lineWidth = unit.size;
-    core.ctx.strokeStyle = 'rgba(255, 255, 0, .09)';
-    core.ctx.stroke();
-    core.ctx.closePath();
-}
-
 function drawUnitsLoop(arr) {
     for (var ID=0;ID<arr.length;ID++){
-        drawUnit(arr[ID]);
+        arr[ID].render();
         // build coordinate index id
-       console.log(arr[ID]);
-       // gps[arr[ID].coordID()] = {index:ID, unit:arr[ID]};
+        gps[arr[ID].coordID()] = {index:ID, unit:arr[ID]};
     }
 }
 
-function disposition(disp,arr,ID,i){
+// // wrote this in a haze a while back.. I think the intent is to go toward or away from another based on bool
+// function disposition(disp,arr,ID,i){
         
-        if(disp){
-        var l = '<';
-        var g = '>';
-        }else{
-        var l = '>';
-        var g = '<';    
-        }
+//         if(disp){
+//         var l = '<';
+//         var g = '>';
+//         }else{
+//         var l = '>';
+//         var g = '<';    
+//         }
         
-        // possibilities
-        if((arr[ID].direction==1 && arr[i].direction == 1 && operators[l](arr[ID].y, arr[i].y)) || arr[ID].direction==3 && arr[i].direction == 3 && operators[g](arr[ID].y, arr[i].y) || (arr[ID].direction==1 && arr[i].direction == 3 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==3 && arr[i].direction == 1 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==3 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[l](arr[ID].y, arr[i].y))){
-            arr[ID].direction=3;                
-        }
-        if((arr[ID].direction==1 && arr[i].direction == 1 && operators[g](arr[ID].y, arr[i].y)) || arr[ID].direction==3 && arr[i].direction == 3 && operators[l](arr[ID].y, arr[i].y) || (arr[ID].direction==1 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==1 && arr[i].direction == 3 && operators[l](arr[ID].y, arr[i].y)) || arr[ID].direction==1 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x) || (arr[ID].direction==3 && arr[i].direction == 1 && operators[l](arr[ID].y, arr[i].y))){
-            arr[ID].direction=1;                
-        }
-        if((arr[ID].direction==2 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || arr[ID].direction==4 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x) || (arr[ID].direction==1 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 1 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 3 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 1 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 3 && operators[g](arr[ID].x, arr[i].x))){
-            arr[ID].direction=2;                
-        }
-        if((arr[ID].direction==2 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || arr[ID].direction==4 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x) || (arr[ID].direction==1 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 1 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 3 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 1 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 3 && operators[l](arr[ID].x, arr[i].x))){
-            arr[ID].direction=4;                
-        }
-}
+//         // possibilities
+//         if((arr[ID].direction==1 && arr[i].direction == 1 && operators[l](arr[ID].y, arr[i].y)) || arr[ID].direction==3 && arr[i].direction == 3 && operators[g](arr[ID].y, arr[i].y) || (arr[ID].direction==1 && arr[i].direction == 3 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==3 && arr[i].direction == 1 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==3 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[l](arr[ID].y, arr[i].y))){
+//             arr[ID].direction=3;                
+//         }
+//         if((arr[ID].direction==1 && arr[i].direction == 1 && operators[g](arr[ID].y, arr[i].y)) || arr[ID].direction==3 && arr[i].direction == 3 && operators[l](arr[ID].y, arr[i].y) || (arr[ID].direction==1 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==1 && arr[i].direction == 3 && operators[l](arr[ID].y, arr[i].y)) || arr[ID].direction==1 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x) || (arr[ID].direction==3 && arr[i].direction == 1 && operators[l](arr[ID].y, arr[i].y))){
+//             arr[ID].direction=1;                
+//         }
+//         if((arr[ID].direction==2 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || arr[ID].direction==4 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x) || (arr[ID].direction==1 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 1 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 3 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 1 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 3 && operators[g](arr[ID].x, arr[i].x))){
+//             arr[ID].direction=2;                
+//         }
+//         if((arr[ID].direction==2 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || arr[ID].direction==4 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x) || (arr[ID].direction==1 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 1 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 3 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 1 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 3 && operators[l](arr[ID].x, arr[i].x))){
+//             arr[ID].direction=4;                
+//         }
+// }
 
 function rollDice(arr) {
     for (var ID=0;ID<arr.length;ID++){
