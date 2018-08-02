@@ -2,8 +2,8 @@ class Core {
     constructor(canvas) {
         let self = this;
         this.settings ={
-            width:960,
-            height:640,
+            width:100,
+            height:100,
             imgHeight:55,
             imgWidth:20,
             velocity:2,
@@ -54,6 +54,16 @@ class Core {
     }
 
     isOdd(num){ return num % 2; };
+    
+    render() {
+        for (var ID=0;ID<this.unitInstances.length;ID++){
+            this.unitInstances[ID].rollDice();
+            this.unitInstances[ID].render();
+            // build coordinate index id
+            gps[this.unitInstances[ID].coordID()] = {index:ID, unit:this.unitInstances[ID]};
+        }
+        gps={}; // todo this is the issue with the detection sine all the changes. need to not clear as fast
+    }
 
 }
 
@@ -191,7 +201,8 @@ class Unit extends Render{
                 }
                 // check is a coord ID exists
                 if(typeof gps[potentialMatch] != "undefined"){
-                    neighborArr.push(gps[potentialMatch].index);
+                    neighborArr.push(gps[potentialMatch].unit);
+                    return neighborArr;
                 }        
              }
         }
@@ -275,6 +286,193 @@ class Unit extends Render{
             this.x += this.velocity;
         }     
     }
+
+   move() {          
+        if(this instanceof Unit){
+
+            this.decisionLog.push(this.direction);
+     
+            if(this.decisionLog.length > 3){
+                this.decisionLog.splice(0, 1);
+            }
+            
+            if(this.decisionLog.indexOf(this.direction)){
+                this.bool = !this.bool;
+            }
+            
+            if(this.collision){
+                this.bool = !this.bool;
+            }
+        }
+        
+        if(!this.change && this.wall != 0){
+            
+            switch(this.direction){
+                //up
+                case 1:
+                  this.y -= this.velocity;
+                  if(this.bool){
+                  this.x += this.choice;
+                  }
+                  break;
+                //right
+                case 2:
+                  this.x += this.velocity;
+                  if(this.bool){
+                  this.y -= this.choice;
+                  }
+                  break;
+                //down
+                case 3:
+                  this.y += this.velocity;
+                  if(this.bool){
+                  this.x -= this.choice;
+                  }
+                  break;
+                //left
+                case 4:
+                  this.x -= this.velocity;
+                  if(this.bool){
+                  this.y += this.choice;
+                  }
+                  break;
+                default:
+                  //do nothing
+                  this.direction=Math.floor(Math.random() * 4)+1;
+            }
+        
+        }
+    }
+
+    rollDice() {
+        // check for pulse
+        if(!this.dead){
+        
+            this.decision += Math.floor(Math.random() * 4)+1;
+            
+            //initial collision detect
+            if(this.x<=this.size||this.x>=core.c.width-this.size||this.y<=this.size||this.y>=core.c.height-this.size){
+
+                this.collision+=1;
+                if(this.collision <= 1){
+                    this.wall = this.direction;
+                }
+                
+                if(this instanceof Unit){
+                    switch(this.wall){
+                        case 0:
+                        this.direction=Math.floor(Math.random() * 4)+1;
+                        break;
+                        case 1:
+                        this.direction=3;
+                        break;
+                        case 2:
+                        this.direction=4;
+                        break;
+                        case 3:
+                        this.direction=1;
+                        break;
+                        case 4:
+                        this.direction=2;
+                        break; 
+                    }
+                }
+                            
+            }else{
+                
+                //collision reset 
+                this.collision=0;
+                this.wall = null;
+                
+                //negate player
+                if(!(this instanceof Player)){
+
+                    // rng velocity set
+                    this.velocity= Math.floor(Math.random() * core.settings.velocity)+.5;
+
+                    // new collision base on gps
+                    // var collision = findNeighbors(this);
+                    // if(collision.length){
+                    //     for (i of collision){
+                    //         if(arr[i] instanceof Unit){
+                    //             this.bool=!arr[i].bool;
+                    //             this.collision=1;
+                    //             this.wall = arr[i].direction;
+                    //             this.velocity = arr[i].velocity > 0 ? (arr[i].velocity*.75) : settings.velocity;
+                    //             break;
+                    //         }
+                    //     }
+                    // }
+
+                    // new grouping base on gps
+                    // var grouping = findNeighbors(this,settings.groupingRange);
+                    // if(grouping.length){
+                    //     for (i of grouping){
+                    //         if(arr[i] instanceof Unit){
+                    //             this.direction = arr[i].direction;   
+                    //             this.decision=arr[i].decision;
+                    //             this.velocity=arr[i].velocity;
+                    //             this.bool=arr[i].bool;
+                    //             break;
+                    //         }
+                    //     }
+                    // }
+                    
+                    var pursuit = this.findNeighbors(core.settings.detectionRange);
+                    if(pursuit.length>=1){
+                        for (var pursue of pursuit){
+                            if(pursue instanceof Player){
+                                this.pursuit = true;
+                                break;
+                            }
+                        }
+                    }
+                    // handle unit changes and persistance of pursuit
+                    if(this.pursuit){
+                        // for testing only, though could make a diff sprite frame for in pursuit
+                        this.fill = 'red';
+                        this.pursuitCourse(pursue.futurePosition());
+                        this.persistance -= 1;
+                        if(this.persistance < 1){
+                            this.pursuit = false;
+                            this.fill = core.settings.fill;
+                            this.persistance = Math.floor(Math.random() * 100)+1;
+                        }
+                    }
+
+                }
+                            
+            }
+
+            // collider bool switch
+            if(this.collision >= 1 && this.wall != this.direction){
+                this.bool=!this.bool;
+               this.move();
+            }
+            
+            // negate player
+            if(this instanceof Unit && !this.pursuit){
+                
+                // // handle start position leashing
+                // if(checkProximity(this,this.startPos)>this.leash){
+                //     plotCourse(this,this.startPos);
+                //    this.move();
+                //     continue;
+                // }
+
+                // no direction set
+                if(this.direction==0){
+                   this.move();
+                }else if(this.collision==0){
+                   this.move();  
+                }
+                
+            }else{ // dont add check for collision without accounting for the clearing of the collided 
+               this.move();
+            }
+
+        }
+    }
 }
 
 class Player extends Unit{
@@ -350,14 +548,6 @@ class Controls {
 var core = new Core(document.getElementsByTagName ('canvas')[0]);
 let userControls = new Controls();
 
-function drawUnitsLoop(arr) {
-    for (var ID=0;ID<arr.length;ID++){
-        arr[ID].render();
-        // build coordinate index id
-        gps[arr[ID].coordID()] = {index:ID, unit:arr[ID]};
-    }
-}
-
 // // wrote this in a haze a while back.. I think the intent is to go toward or away from another based on bool
 // function disposition(disp,arr,ID,i){
         
@@ -384,201 +574,6 @@ function drawUnitsLoop(arr) {
 //         }
 // }
 
-function rollDice(arr) {
-    for (var ID=0;ID<arr.length;ID++){
-
-        // check for pulse
-        if(!arr[ID].dead){
-        
-            arr[ID].decision += Math.floor(Math.random() * 4)+1;
-            
-            //initial collision detect
-            if(arr[ID].x<=arr[ID].size||arr[ID].x>=core.c.width-arr[ID].size||arr[ID].y<=arr[ID].size||arr[ID].y>=core.c.height-arr[ID].size){
-
-                arr[ID].collision+=1;
-                if(arr[ID].collision <= 1){
-                    arr[ID].wall = arr[ID].direction;
-                }
-                
-                if(arr[ID] instanceof Unit){
-                    switch(arr[ID].wall){
-                        case 0:
-                        arr[ID].direction=Math.floor(Math.random() * 4)+1;
-                        break;
-                        case 1:
-                        arr[ID].direction=3;
-                        break;
-                        case 2:
-                        arr[ID].direction=4;
-                        break;
-                        case 3:
-                        arr[ID].direction=1;
-                        break;
-                        case 4:
-                        arr[ID].direction=2;
-                        break; 
-                    }
-                }
-                            
-            }else{
-                
-                //collision reset 
-                arr[ID].collision=0;
-                arr[ID].wall = null;
-                
-                //negate player
-                if(arr[ID] instanceof Unit){
-                    // rng velocity set
-                    arr[ID].velocity= Math.floor(Math.random() * core.settings.velocity)+.5;
-
-                    // new collision base on gps
-                    // var collision = findNeighbors(arr[ID]);
-                    // if(collision.length){
-                    //     for (i of collision){
-                    //         if(arr[i] instanceof Unit){
-                    //             arr[ID].bool=!arr[i].bool;
-                    //             arr[ID].collision=1;
-                    //             arr[ID].wall = arr[i].direction;
-                    //             arr[ID].velocity = arr[i].velocity > 0 ? (arr[i].velocity*.75) : settings.velocity;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-
-                    // new grouping base on gps
-                    // var grouping = findNeighbors(arr[ID],settings.groupingRange);
-                    // if(grouping.length){
-                    //     for (i of grouping){
-                    //         if(arr[i] instanceof Unit){
-                    //             arr[ID].direction = arr[i].direction;   
-                    //             arr[ID].decision=arr[i].decision;
-                    //             arr[ID].velocity=arr[i].velocity;
-                    //             arr[ID].bool=arr[i].bool;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-                    
-                    var pursuit = arr[ID].findNeighbors(core.settings.detectionRange);
-                    if(pursuit.length){
-                        for (i of pursuit){
-                            if(arr[i] instanceof Player){
-                                arr[ID].pursuit = true;
-                                break;
-                            }
-                        }
-                    }
-                    // handle unit changes and persistance of pursuit
-                    if(arr[ID].pursuit){
-                        // for testing only, though could make a diff sprite frame for in pursuit
-                        arr[ID].fill = 'red';
-                        arr[ID].pursuitCourse(arr[i].futurePosition());
-                        arr[ID].persistance -= 1;
-                        if(arr[ID].persistance < 1){
-                            arr[ID].pursuit = false;
-                            arr[ID].fill = core.settings.fill;
-                            arr[ID].persistance = Math.floor(Math.random() * 100)+1;
-                        }
-                    }
-
-                }
-                            
-            }
-
-            // collider bool switch
-            if(arr[ID].collision >= 1 && arr[ID].wall != arr[ID].direction){
-                arr[ID].bool=!arr[ID].bool;
-                movearr(ID,arr[ID].direction,arr);
-                continue;
-            }
-            
-            // negate player
-            if(arr[ID] instanceof Unit && !arr[ID].pursuit){
-                
-                // // handle start position leashing
-                // if(checkProximity(arr[ID],arr[ID].startPos)>arr[ID].leash){
-                //     plotCourse(arr[ID],arr[ID].startPos);
-                //     movearr(ID,arr[ID].direction,arr);
-                //     continue;
-                // }
-
-                // no direction set
-                if(arr[ID].direction==0){
-                    movearr(ID,Math.floor(Math.random() * 4)+1,arr);
-                }else if(arr[ID].collision==0){
-                    movearr(ID,arr[ID].direction,arr);  
-                }
-                
-            }else{ // dont add check for collision without accounting for the clearing of the collided 
-                movearr(ID,arr[ID].direction,arr);
-            }
-
-        }
-    }
-}
-
-function movearr(ID,dir,arr) {          
-    if(arr[ID] instanceof Unit){
-
-        arr[ID].decisionLog.push(dir);
- 
-        if(arr[ID].decisionLog.length > 3){
-            arr[ID].decisionLog.splice(0, 1);
-        }
-        
-        if(arr[ID].decisionLog.indexOf(dir)){
-            arr[ID].bool = !arr[ID].bool;
-        }
-        
-        if(arr[ID].collision){
-            arr[ID].bool = !arr[ID].bool;
-        }
-    }
-    
-    if(!arr[ID].change && arr[ID].wall != 0){
-        
-    switch(dir)
-    {
-    //up
-    case 1:
-      arr[ID].y -= arr[ID].velocity;
-      if(arr[ID].bool){
-      arr[ID].x += arr[ID].choice;
-      }
-      arr[ID].direction = 1;
-      break;
-    //right
-    case 2:
-      arr[ID].x += arr[ID].velocity;
-      if(arr[ID].bool){
-      arr[ID].y -= arr[ID].choice;
-      }
-      arr[ID].direction = 2;
-      break;
-    //down
-    case 3:
-      arr[ID].y += arr[ID].velocity;
-      if(arr[ID].bool){
-      arr[ID].x -= arr[ID].choice;
-      }
-      arr[ID].direction = 3;
-      break;
-    //left
-    case 4:
-      arr[ID].x -= arr[ID].velocity;
-      if(arr[ID].bool){
-      arr[ID].y += arr[ID].choice;
-      }
-      arr[ID].direction = 4;
-      break;
-    default:
-      //do nothing
-      arr[ID].direction=0;
-    }
-    
-    }
-};
-
 // id the player for all use
 let player = core.unitInstances.find(unit => unit instanceof Player);
 
@@ -588,10 +583,8 @@ gps={};
 function timeLoop() {
     core.ctx.clearRect(0,0,core.c.width,core.c.height);
     //ctx.globalAlpha = 0.2;
-    rollDice(core.unitInstances);
     // global pos obj array
-    gps={};
-    drawUnitsLoop(core.unitInstances);
+    core.render();
     //console.log(unitInstances[0]);
     //console.log(Object.keys(gps).length);
 } 
