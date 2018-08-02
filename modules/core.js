@@ -1,10 +1,9 @@
-
 class Core {
     constructor(canvas) {
+        let self = this;
         this.settings ={
             width:960,
             height:640,
-            num:10,
             imgHeight:55,
             imgWidth:20,
             velocity:2,
@@ -16,6 +15,10 @@ class Core {
             coneWidth: 10,
             fill: 'rgba(186, 85, 211, .9)',
             stroke: 'rgba(153, 50, 204, .1)',
+            config: [
+                { class:Gremlin, count:10 },
+                { class:Player, count:1 }
+            ]
         };
 
         this.c = canvas;
@@ -33,6 +36,21 @@ class Core {
             '<': function(a, b){ return a < b; }
             // ...
         };
+
+        this.generate = {
+            units: function(config){
+                for(var i=0;i<config.length;i++){
+                    this.instances(config[i]);
+                }
+            },
+            instances: function(type){
+                for(var i=0;i<type.count;i++){
+                    self.unitInstances.push(new type.class(self));
+                }
+            }
+        }
+
+        this.init = this.generate.units(this.settings.config);
     }
 
     isOdd(num){ return num % 2; };
@@ -40,20 +58,27 @@ class Core {
 }
 
 class Unit {
+    constructor(C){
+    }
+
     // will need to pass thes unitarrays or gps into this or will fail
-    findNeighbors(single,proximity=1){
+    coordID(location=this){
+        return 'x'+ Math.floor(location.x) + 'y' + Math.floor(location.y);
+    };
+
+    findNeighbors(proximity=1){
         var xArr = [];
         var yArr = [];
         var neighborArr = [];
-        var range = (single.size*proximity)*2;
-        var selfId = coordID(single);
+        var range = (this.size*proximity)*2;
+        var selfId = this.coordID();
         // build x coords arr
         for (var i = range; i >= 0; i--){
-            xArr.push(single.x-range+i);
+            xArr.push(this.x-range+i);
         }
         // build y coords arr
         for (var i = range; i >= 0; i--){
-            yArr.push(single.y-range+i);
+            yArr.push(this.y-range+i);
         }
         // build all possible combos of x y arrs
         for(var i = 0; i < xArr.length; i++){
@@ -70,30 +95,6 @@ class Unit {
         }
         return neighborArr;   
     };
-
-    findNearest(location){
-        var xArr = [];
-        var yArr = [];
-        var range = 20;
-        var selfId = coordID(location);
-        // build x coords arr
-        for (var i = range; i >= 0; i--){
-            xArr.push(location.x-range+i);
-        }
-        // build y coords arr
-        for (var i = range; i >= 0; i--){
-            yArr.push(location.y-range+i);
-        }
-        for(var i = 0; i < xArr.length; i++){
-             for(var j = 0; j < yArr.length; j++){
-                var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
-                // check is a coord ID exists in thei frame for this potential combo
-                if(typeof gps[potentialMatch] != "undefined"){
-                    return gps[potentialMatch];
-                }        
-             }
-        }    
-    }
 
     checkProximity(single,location){
         let distX =  Math.abs(single.x - location.x);
@@ -121,54 +122,55 @@ class Unit {
         }
     }
 
-    pursuitCourse(self,target) {
-        // var distance = (target.x - self.x)+(target.y - self.y);
-        var futurePos = {x:null,y:null};
-        // todo create a list of direction commands for pursuit based on distance and future position
-        // console.log(distance);
-
-        switch(target.direction)
+    futurePosition() {
+        // returns estimated future postion {x,y}
+        let futurePos = {x:this.x,y:this.y}
+        switch(this.direction)
         {
         //up
         case 1:
-            futurePos.y = target.y - (target.velocity*2);
-            futurePos.x = target.x + target.choice;
+            futurePos.y = this.y - (this.velocity**2);
+            futurePos.x = this.x + this.choice;
           break;
         //right
         case 2:
-            futurePos.x = target.x + (target.velocity*2);
-            futurePos.y = target.y - target.choice;
+            futurePos.x = this.x + (this.velocity**2);
+            futurePos.y = this.y - this.choice;
           break;
         //down
         case 3:
-            futurePos.y = target.y + (target.velocity*2);
-            futurePos.x = target.x - target.choice;
+            futurePos.y = this.y + (this.velocity**2);
+            futurePos.x = this.x - this.choice;
           break;
         //left
         case 4:
-            futurePos.x = target.x - (target.velocity*2);
-            futurePos.y = target.y + target.choice;
+            futurePos.x = this.x - (this.velocity**2);
+            futurePos.y = this.y + this.choice;
           break;
         default:
-            futurePos.x = target.x;
-            futurePos.y = target.y;
+            futurePos.x = this.x;
+            futurePos.y = this.y;
         }
+        return futurePos;
+    }
 
-        if(futurePos.y < self.y){
-            self.direction = 1;
-            self.y -= self.velocity + target.velocity;
+    pursuitCourse(target) {
+        // var distance = (target.x - self.x)+(target.y - self.y);
+        if(target.y < this.y){
+            this.direction = 1;
+            this.y -= this.velocity;
         }
-        if(futurePos.x < self.x){
-            self.direction = 4;
-            self.x -= self.velocity + target.velocity;
+        if(target.x < this.x){
+            this.direction = 4;
+            this.x -= this.velocity;
         }
-        if(futurePos.y > self.y){
-            self.direction = 3;
-            self.y += self.velocity + target.velocity;
+        if(target.y > this.y){
+            this.direction = 3;
+            this.y += this.velocity;
         }
-        if(futurePos.x > self.x){
-            self.direction = 2;
-            self.x += self.velocity + target.velocity;
+        if(target.x > this.x){
+            this.direction = 2;
+            this.x += this.velocity;
         }     
     }
 }
@@ -244,30 +246,24 @@ class Controls {
 }
 
 
-let core = new Core(document.getElementsByTagName ('canvas')[0]);
+var core = new Core(document.getElementsByTagName ('canvas')[0]);
 let userControls = new Controls();
-
-function genunitInstances(){
-    for(var i=0;i<settings.num;i++){
-        core.unitInstances.push(new Gremlin(core));
-    }
-};
 
 function drawUnit(unit){
     //draw a units
-    ctx.beginPath();
+    core.ctx.beginPath();
         
-    ctx.moveTo(unit.x, unit.y - unit.size);
+    core.ctx.moveTo(unit.x, unit.y - unit.size);
       
-    ctx.arc(unit.x, unit.y, unit.size, 0, 2 * Math.PI, false);
+    core.ctx.arc(unit.x, unit.y, unit.size, 0, 2 * Math.PI, false);
         
-    ctx.lineWidth = unit.size;    
-    ctx.strokeStyle = unit.stroke;
-    ctx.stroke();
+    core.ctx.lineWidth = unit.size;    
+    core.ctx.strokeStyle = unit.stroke;
+    core.ctx.stroke();
 
-    ctx.fillStyle = unit.fill;    
-    ctx.fill();
-    ctx.closePath();
+    core.ctx.fillStyle = unit.fill;    
+    core.ctx.fill();
+    core.ctx.closePath();
     
     if(!unit.dead){
         drawCone(unit);
@@ -293,7 +289,7 @@ function conePath(obj){
     if(obj.unit.bool){
         obj.ctx.lineTo(obj.unit.x+(obj.L * obj.unit.choice) * obj.align, obj.unit.y+(obj.W * (obj.align * -1)));
         obj.ctx.lineTo(obj.unit.x+(obj.W * obj.unit.choice) * obj.align, obj.unit.y+(obj.L * (obj.align * -1)));
-    }else if(isOdd(obj.unit.direction)){
+    }else if(core.isOdd(obj.unit.direction)){
         obj.ctx.lineTo(obj.unit.x+(obj.W * (obj.align * -1)), obj.unit.y+(obj.L * (obj.align * -1)));
         obj.ctx.lineTo(obj.unit.x+(obj.W * obj.align), obj.unit.y+(obj.L * (obj.align * -1)));
     }else{
@@ -304,13 +300,13 @@ function conePath(obj){
 
 function drawCone(unit){
     // detectionRange cone draw
-    ctx.beginPath();
-    ctx.moveTo(unit.x, unit.y);
+    core.ctx.beginPath();
+    core.ctx.moveTo(unit.x, unit.y);
     
-    var W = settings.coneWidth;
-    var L = settings.coneLength;
+    var W = core.settings.coneWidth;
+    var L = core.settings.coneLength;
     obj = {
-        ctx:ctx,
+        ctx:core.ctx,
         unit:unit,
         W:W,
         L:L,
@@ -352,25 +348,22 @@ function drawCone(unit){
     }
     conePath(obj);
 
-    ctx.lineTo(unit.x, unit.y);  
-    ctx.fillStyle = 'rgba(255, 255, 0, .05)';
-    ctx.fill();
+    core.ctx.lineTo(unit.x, unit.y);  
+    core.ctx.fillStyle = 'rgba(255, 255, 0, .05)';
+    core.ctx.fill();
     
-    ctx.lineWidth = unit.size;
-    ctx.strokeStyle = 'rgba(255, 255, 0, .09)';
-    ctx.stroke();
-    ctx.closePath();
-}
-
-function coordID(unit){
-    return 'x'+ Math.floor(unit.x) + 'y' + Math.floor(unit.y);
+    core.ctx.lineWidth = unit.size;
+    core.ctx.strokeStyle = 'rgba(255, 255, 0, .09)';
+    core.ctx.stroke();
+    core.ctx.closePath();
 }
 
 function drawUnitsLoop(arr) {
     for (var ID=0;ID<arr.length;ID++){
         drawUnit(arr[ID]);
         // build coordinate index id
-        gps[coordID(arr[ID])] = {index:ID, unit:arr[ID]};
+       console.log(arr[ID]);
+       // gps[arr[ID].coordID()] = {index:ID, unit:arr[ID]};
     }
 }
 
@@ -408,7 +401,7 @@ function rollDice(arr) {
             arr[ID].decision += Math.floor(Math.random() * 4)+1;
             
             //initial collision detect
-            if(arr[ID].x<=arr[ID].size||arr[ID].x>=c.width-arr[ID].size||arr[ID].y<=arr[ID].size||arr[ID].y>=c.height-arr[ID].size){
+            if(arr[ID].x<=arr[ID].size||arr[ID].x>=core.c.width-arr[ID].size||arr[ID].y<=arr[ID].size||arr[ID].y>=core.c.height-arr[ID].size){
 
                 arr[ID].collision+=1;
                 if(arr[ID].collision <= 1){
@@ -444,7 +437,7 @@ function rollDice(arr) {
                 //negate player
                 if(arr[ID] instanceof Unit){
                     // rng velocity set
-                    arr[ID].velocity= Math.floor(Math.random() * settings.velocity)+.5;
+                    arr[ID].velocity= Math.floor(Math.random() * core.settings.velocity)+.5;
 
                     // new collision base on gps
                     // var collision = findNeighbors(arr[ID]);
@@ -474,7 +467,7 @@ function rollDice(arr) {
                     //     }
                     // }
                     
-                    var pursuit = findNeighbors(arr[ID],settings.detectionRange);
+                    var pursuit = arr[ID].findNeighbors(core.settings.detectionRange);
                     if(pursuit.length){
                         for (i of pursuit){
                             if(arr[i] instanceof Player){
@@ -487,11 +480,11 @@ function rollDice(arr) {
                     if(arr[ID].pursuit){
                         // for testing only, though could make a diff sprite frame for in pursuit
                         arr[ID].fill = 'red';
-                        pursuitCourse(arr[ID],player);
+                        arr[ID].pursuitCourse(arr[i].futurePosition());
                         arr[ID].persistance -= 1;
                         if(arr[ID].persistance < 1){
                             arr[ID].pursuit = false;
-                            arr[ID].fill = settings.fill;
+                            arr[ID].fill = core.settings.fill;
                             arr[ID].persistance = Math.floor(Math.random() * 100)+1;
                         }
                     }
@@ -594,21 +587,19 @@ function movearr(ID,dir,arr) {
     }
 };
 
-// spawn player
-core.unitInstances.push(new Player(this));
 // id the player for all use
 let player = core.unitInstances.find(unit => unit instanceof Player);
-genunitInstances();
+
 // global pos obj array
 gps={};
 
 function timeLoop() {
-    ctx.clearRect(0,0,c.width,c.height);
+    core.ctx.clearRect(0,0,core.c.width,core.c.height);
     //ctx.globalAlpha = 0.2;
-    rollDice(unitInstances);
+    rollDice(core.unitInstances);
     // global pos obj array
     gps={};
-    drawUnitsLoop(unitInstances);
+    drawUnitsLoop(core.unitInstances);
     //console.log(unitInstances[0]);
     //console.log(Object.keys(gps).length);
 } 
@@ -623,3 +614,27 @@ let init = setInterval(timeLoop, 1000 / 30);
 //     var clicked = findNearest({x:x,y:y});
 //     console.log(clicked);
 // }
+
+// findNearest(location){
+//         var xArr = [];
+//         var yArr = [];
+//         var range = 20;
+//         var selfId = this.coordID(location);
+//         // build x coords arr
+//         for (var i = range; i >= 0; i--){
+//             xArr.push(location.x-range+i);
+//         }
+//         // build y coords arr
+//         for (var i = range; i >= 0; i--){
+//             yArr.push(location.y-range+i);
+//         }
+//         for(var i = 0; i < xArr.length; i++){
+//              for(var j = 0; j < yArr.length; j++){
+//                 var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
+//                 // check is a coord ID exists in thei frame for this potential combo
+//                 if(typeof gps[potentialMatch] != "undefined"){
+//                     return gps[potentialMatch];
+//                 }        
+//              }
+//         }    
+//     }
