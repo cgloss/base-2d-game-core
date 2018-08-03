@@ -95,16 +95,17 @@ class Render {
         }
     }
     setSprite(){
-        if(this.sprite){
-            let spriteMap = [
-                null,
-                'up',
-                'right',
-                'down',
-                'left',
-            ];
-            this.img.src = this.sprite[spriteMap[this.direction]];
+        if(!this.sprite || !this.direction){
+            return;
         }
+        let spriteMap = [
+            null,
+            'up',
+            'right',
+            'down',
+            'left',
+        ];
+        this.img.src = this.sprite[spriteMap[this.direction]];
     }
     drawCone(){
         // detectionRange cone draw
@@ -241,19 +242,19 @@ class Unit extends Render{
         // could add a check for which of the last, in order to ensure the course is more direct rather then boxy
         if(location.y < single.y){
             single.direction = 1;
-            single.y -= single.velocity*.05;
+            single.y -= single.velocity;
         }
         if(location.x < single.x){
             single.direction = 4;
-            single.x -= single.velocity*.05;
+            single.x -= single.velocity;
         }
         if(location.y > single.y){
             single.direction = 3;
-            single.y += single.velocity*.05;
+            single.y += single.velocity;
         }
         if(location.x > single.x){
             single.direction = 2;
-            single.x += single.velocity*.05;
+            single.x += single.velocity;
         }
     }
 
@@ -410,7 +411,7 @@ class Unit extends Render{
                 if(!(this instanceof Player)){
 
                     // rng velocity set
-                    this.velocity= Math.floor(Math.random() * core.settings.velocity)+.5;
+                    this.velocity= Math.floor(Math.random() * core.settings.velocity)+1;
 
                     // new collision base on gps
                     // var collision = findNeighbors(this);
@@ -514,7 +515,7 @@ class Gremlin extends Unit{
         this.x = Math.floor(Math.random() * C.settings.width);
         this.y = Math.floor(Math.random() * C.settings.height); 
         this.size = C.settings.unitSize;
-        this.velocity = C.settings.velocity;
+        this.velocity = C.settings.velocity*2;
         this.direction = 0; 
         this.decision = 0;
         this.collision = 0;
@@ -543,10 +544,10 @@ class Controls {
     //set rightDown or leftDown if the right or left keys are down
     onKeyDown(e) {
         if ([38,39,40,37].indexOf(e.keyCode) !== -1){
-            if (e.keyCode == 38) Object.assign(this.player, {direction:1,velocity:2}) // up
-            if (e.keyCode == 39) Object.assign(this.player, {direction:2,velocity:2}) // right
-            if (e.keyCode == 40) Object.assign(this.player, {direction:3,velocity:2}) // down
-            if (e.keyCode == 37) Object.assign(this.player, {direction:4,velocity:2}) // left
+            if (e.keyCode == 38) Object.assign(this.player, {direction:1,velocity:4}) // up
+            if (e.keyCode == 39) Object.assign(this.player, {direction:2,velocity:4}) // right
+            if (e.keyCode == 40) Object.assign(this.player, {direction:3,velocity:4}) // down
+            if (e.keyCode == 37) Object.assign(this.player, {direction:4,velocity:4}) // left
             e.preventDefault();
         }
     }
@@ -592,7 +593,7 @@ function timeLoop() {
     core.ctx.clearRect(0,0,core.c.width,core.c.height);
     core.render();
 } 
-let init = setInterval(timeLoop, 1000 / 30);
+let init = setInterval(timeLoop, 1000 / 60);
 
 // //helper functions
 // core.c.addEventListener("mousedown", unitInteraction, false);
