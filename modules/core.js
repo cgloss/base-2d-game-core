@@ -94,6 +94,18 @@ class Render {
             }
         }
     }
+    setSprite(){
+        if(this.sprite){
+            let spriteMap = [
+                null,
+                'up',
+                'right',
+                'down',
+                'left',
+            ];
+            this.img.src = this.sprite[spriteMap[this.direction]];
+        }
+    }
     drawCone(){
         // detectionRange cone draw
         this.C.ctx.beginPath();
@@ -105,39 +117,37 @@ class Render {
             align: 1
         };
 
-        if(this.sprite){
-            switch(this.direction){
-                //up
-                case 1:
-                    // assign up sprite
-                    this.img.src = this.sprite.up;
-                    break;
-                //right
-                case 2:
+        switch(this.direction){
+            //up
+            case 1:
+                // assign up sprite
+                this.setSprite();
+                break;
+            //right
+            case 2:
+                obj.align = -1;
+                if(this.choice == 1 && this.bool){
+                    obj.align = 1;
+                }
+                // assign right sprite
+                this.setSprite();
+              break;
+            //down
+            case 3:
+                obj.align = -1;
+                // assign down sprite
+                this.setSprite();
+              break;
+            //left
+            case 4:
+                if(this.choice == 1 && this.bool){
                     obj.align = -1;
-                    if(this.choice == 1 && this.bool){
-                        obj.align = 1;
-                    }
-                    // assign right sprite
-                    this.img.src = this.sprite.right;
-                  break;
-                //down
-                case 3:
-                    obj.align = -1;
-                    // assign down sprite
-                    this.img.src = this.sprite.down;
-                  break;
-                //left
-                case 4:
-                    if(this.choice == 1 && this.bool){
-                        obj.align = -1;
-                    }
-                    // assign left sprite
-                    this.img.src = this.sprite.left;
-                  break;
-                default:
-                  //do nothing
-            }
+                }
+                // assign left sprite
+                this.setSprite();
+              break;
+            default:
+              //do nothing
         }
         this.conePath(obj);
 
