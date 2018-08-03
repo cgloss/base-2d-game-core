@@ -438,7 +438,7 @@ class Unit extends Render{
                         if(this.persistance < 1){
                             this.pursuit = false;
                             this.fill = core.settings.fill;
-                            this.persistance = Math.floor(Math.random() * 100)+30;
+                            this.persistance = Math.floor(Math.random() * 100)+15;
                         }
                     }
 
@@ -448,7 +448,7 @@ class Unit extends Render{
             
             if(this.collision < 1 || this.wall != this.direction){
                 this.move();
-                if(this.last != this.coordID()){
+                if(this.coordID() != this.last && this.C.gps[this.last]){
                     delete this.C.gps[this.last];
                 }
             }
