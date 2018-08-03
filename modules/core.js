@@ -49,6 +49,7 @@ class Core {
         }
         this.gps = {};
         this.init = this.generate.units(this.settings.config);
+        this.player = this.unitInstances.find(unit => unit instanceof Player);
     }
 
     isOdd(num){ return num % 2; };
@@ -502,18 +503,19 @@ class Gremlin extends Unit{
 }
 
 class Controls {
-    constructor(){
-        document.addEventListener("keydown", this.onKeyDown);
-        document.addEventListener("keyup", this.onKeyUp);
+    constructor(C){
+        this.player = C.player;
+        console.log(this.player);
+        document.addEventListener("keydown", this.onKeyDown.bind(this));
+        document.addEventListener("keyup", this.onKeyUp.bind(this));
     }
     //set rightDown or leftDown if the right or left keys are down
     onKeyDown(evt) {
         if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-            // console.log(player);
-            if (evt.keyCode == 38) Object.assign(player, {direction:1,velocity:2}) // up
-            if (evt.keyCode == 39) Object.assign(player, {direction:2,velocity:2}) // right
-            if (evt.keyCode == 40) Object.assign(player, {direction:3,velocity:2}) // down
-            if (evt.keyCode == 37) Object.assign(player, {direction:4,velocity:2}) // left
+            if (evt.keyCode == 38) Object.assign(this.player, {direction:1,velocity:2}) // up
+            if (evt.keyCode == 39) Object.assign(this.player, {direction:2,velocity:2}) // right
+            if (evt.keyCode == 40) Object.assign(this.player, {direction:3,velocity:2}) // down
+            if (evt.keyCode == 37) Object.assign(this.player, {direction:4,velocity:2}) // left
             evt.preventDefault();
         }
     }
@@ -521,13 +523,13 @@ class Controls {
     //and unset them when the right or left key is released
     onKeyUp(evt) {
         if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-            Object.assign(player, {velocity:0,frame:0});
+            Object.assign(this.player, {velocity:0,frame:0});
         }
     }
 }
 
 var core = new Core(document.getElementsByTagName ('canvas')[0]);
-let userControls = new Controls();
+let userControls = new Controls(core);
 
 // // wrote this in a haze a while back.. I think the intent is to go toward or away from another based on bool
 // function disposition(disp,arr,ID,i){
@@ -555,16 +557,9 @@ let userControls = new Controls();
 //         }
 // }
 
-// id the player for all use
-let player = core.unitInstances.find(unit => unit instanceof Player);
-
 function timeLoop() {
     core.ctx.clearRect(0,0,core.c.width,core.c.height);
-    //ctx.globalAlpha = 0.2;
-    // global pos obj array
     core.render();
-    //console.log(unitInstances[0]);
-    //console.log(Object.keys(gps).length);
 } 
 let init = setInterval(timeLoop, 1000 / 30);
 
