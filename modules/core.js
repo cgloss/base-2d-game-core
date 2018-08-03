@@ -2,21 +2,19 @@ class Core {
     constructor(canvas) {
         let self = this;
         this.settings ={
-            width:100,
-            height:100,
+            width:980,
+            height:640,
             imgHeight:55,
             imgWidth:20,
+            coneLength: 25,
+            coneWidth: 10,
             velocity:2,
             unitSize:4,
             hitSize:5,
-            groupingRange:5,
-            detectionRange:12,
-            coneLength: 25,
-            coneWidth: 10,
             fill: 'rgba(186, 85, 211, .9)',
             stroke: 'rgba(153, 50, 204, .1)',
             config: [
-                { class:Gremlin, count:10 },
+                { class:Gremlin, count:1 },
                 { class:Player, count:1 }
             ]
         };
@@ -49,20 +47,21 @@ class Core {
                 }
             }
         }
-
+        this.gps = {};
         this.init = this.generate.units(this.settings.config);
     }
 
     isOdd(num){ return num % 2; };
     
     render() {
+        // console.log(this.gps);
         for (var ID=0;ID<this.unitInstances.length;ID++){
+            this.unitInstances[ID].last = this.unitInstances[ID].coordID();
+            // build coordinate index id
+            this.gps[this.unitInstances[ID].last] = {index:ID, unit:this.unitInstances[ID]};
             this.unitInstances[ID].rollDice();
             this.unitInstances[ID].render();
-            // build coordinate index id
-            gps[this.unitInstances[ID].coordID()] = {index:ID, unit:this.unitInstances[ID]};
         }
-        gps={}; // todo this is the issue with the detection sine all the changes. need to not clear as fast
     }
 
 }
@@ -171,6 +170,7 @@ class Render {
 class Unit extends Render{
     constructor(C){
         super(C);
+        this.C = C;
     }
 
     // will need to pass thes unitarrays or gps into this or will fail
@@ -200,8 +200,8 @@ class Unit extends Render{
                     continue;
                 }
                 // check is a coord ID exists
-                if(typeof gps[potentialMatch] != "undefined"){
-                    neighborArr.push(gps[potentialMatch].unit);
+                if(typeof this.C.gps[potentialMatch] != "undefined"){
+                    neighborArr.push(this.C.gps[potentialMatch].unit);
                     return neighborArr;
                 }        
              }
@@ -403,7 +403,7 @@ class Unit extends Render{
                     //         }
                     //     }
                     // }
-
+// todo this should be run 1 time, and in the process as its running we assing the proximity, and check agains the various needs
                     // new grouping base on gps
                     // var grouping = findNeighbors(this,settings.groupingRange);
                     // if(grouping.length){
@@ -418,57 +418,39 @@ class Unit extends Render{
                     //     }
                     // }
                     
-                    var pursuit = this.findNeighbors(core.settings.detectionRange);
+                    var pursuit = this.findNeighbors(this.detectionRange);
                     if(pursuit.length>=1){
+                        console.log(pursuit);
                         for (var pursue of pursuit){
                             if(pursue instanceof Player){
-                                this.pursuit = true;
+                                this.pursuit = pursue;
                                 break;
                             }
                         }
                     }
                     // handle unit changes and persistance of pursuit
                     if(this.pursuit){
+                        console.log(this.pursuit);
                         // for testing only, though could make a diff sprite frame for in pursuit
                         this.fill = 'red';
-                        this.pursuitCourse(pursue.futurePosition());
+                        this.pursuitCourse(this.pursuit.futurePosition());
                         this.persistance -= 1;
                         if(this.persistance < 1){
                             this.pursuit = false;
                             this.fill = core.settings.fill;
-                            this.persistance = Math.floor(Math.random() * 100)+1;
+                            this.persistance = Math.floor(Math.random() * 100)+30;
                         }
                     }
 
                 }
                             
             }
-
-            // collider bool switch
-            if(this.collision >= 1 && this.wall != this.direction){
-                this.bool=!this.bool;
-               this.move();
-            }
             
-            // negate player
-            if(this instanceof Unit && !this.pursuit){
-                
-                // // handle start position leashing
-                // if(checkProximity(this,this.startPos)>this.leash){
-                //     plotCourse(this,this.startPos);
-                //    this.move();
-                //     continue;
-                // }
-
-                // no direction set
-                if(this.direction==0){
-                   this.move();
-                }else if(this.collision==0){
-                   this.move();  
+            if(this.collision < 1 || this.wall != this.direction){
+                this.move();
+                if(this.last != this.coordID()){
+                    delete this.C.gps[this.last];
                 }
-                
-            }else{ // dont add check for collision without accounting for the clearing of the collided 
-               this.move();
             }
 
         }
@@ -516,7 +498,9 @@ class Gremlin extends Unit{
         this.animrate = 2;
         this.fill = C.settings.fill;
         this.stroke = C.settings.stroke;
-        this.persistance = Math.floor(Math.random() * 100)+1;
+        this.persistance = 1000;
+        this.groupingRange = 5;
+        this.detectionRange = 15;
     }
 }
 
@@ -576,9 +560,6 @@ let userControls = new Controls();
 
 // id the player for all use
 let player = core.unitInstances.find(unit => unit instanceof Player);
-
-// global pos obj array
-gps={};
 
 function timeLoop() {
     core.ctx.clearRect(0,0,core.c.width,core.c.height);
