@@ -510,19 +510,19 @@ class Controls {
         document.addEventListener("keyup", this.onKeyUp.bind(this));
     }
     //set rightDown or leftDown if the right or left keys are down
-    onKeyDown(evt) {
-        if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-            if (evt.keyCode == 38) Object.assign(this.player, {direction:1,velocity:2}) // up
-            if (evt.keyCode == 39) Object.assign(this.player, {direction:2,velocity:2}) // right
-            if (evt.keyCode == 40) Object.assign(this.player, {direction:3,velocity:2}) // down
-            if (evt.keyCode == 37) Object.assign(this.player, {direction:4,velocity:2}) // left
-            evt.preventDefault();
+    onKeyDown(e) {
+        if ([38,39,40,37].indexOf(e.keyCode) !== -1){
+            if (e.keyCode == 38) Object.assign(this.player, {direction:1,velocity:2}) // up
+            if (e.keyCode == 39) Object.assign(this.player, {direction:2,velocity:2}) // right
+            if (e.keyCode == 40) Object.assign(this.player, {direction:3,velocity:2}) // down
+            if (e.keyCode == 37) Object.assign(this.player, {direction:4,velocity:2}) // left
+            e.preventDefault();
         }
     }
 
     //and unset them when the right or left key is released
-    onKeyUp(evt) {
-        if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
+    onKeyUp(e) {
+        if ([38,39,40,37].indexOf(e.keyCode) !== -1){
             Object.assign(this.player, {velocity:0,frame:0});
         }
     }
