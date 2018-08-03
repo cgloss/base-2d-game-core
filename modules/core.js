@@ -81,21 +81,20 @@ class Render {
         this.C.ctx.fill();
         this.C.ctx.closePath();
         if(!this.dead){
-            this.drawCone(this);
+            this.drawCone();
         }
-        //var img=new Image();
-        
-        // assign default sprite
-        //img.src = "path/to/sprite";
+
+        //assign default sprite
+        this.img.src = "lib/img/mysprites_tileset_walk_down.png";
         
         //sprite drw animation
-        // if(!unit.dead){
-        //     ctx.drawImage(img,arr[ID].frame,0,20,60,arr[ID].x-(settings.imgWidth/2),arr[ID].y-settings.imgHeight,20,60);
-        //     unit.animrate = (unit.animrate) ? unit.animrate-1 : 2;
-        //     if(!unit.animrate){
-        //         unit.frame = (unit.frame<60) ? unit.frame+20 : 0;
-        //     }
-        // }
+        if(!this.dead){
+            this.C.ctx.drawImage(this.img,this.frame,0,20,60,this.x-(this.C.settings.imgWidth/2),this.y-this.C.settings.imgHeight,20,60);
+            this.animrate = (this.animrate) ? this.animrate-1 : 2;
+            if(!this.animrate){
+                this.frame = (this.frame<60) ? this.frame+20 : 0;
+            }
+        }
     }
     drawCone(){
         // detectionRange cone draw
@@ -113,7 +112,7 @@ class Render {
             //up
             case 1:
                 // assign up sprite
-                //img.src = "lib/img/mysprites_tileset_walk_up.png";
+                this.img.src = "lib/img/mysprites_tileset_walk_up.png";
                 break;
             //right
             case 2:
@@ -122,13 +121,13 @@ class Render {
                     obj.align = 1;
                 }
                 // assign right sprite
-                //img.src = "lib/img/mysprites_tileset_walk_right.png";
+                this.img.src = "lib/img/mysprites_tileset_walk_right.png";
               break;
             //down
             case 3:
                 obj.align = -1;
                 // assign down sprite
-                //img.src = "lib/img/mysprites_tileset_walk_down.png";
+                this.img.src = "lib/img/mysprites_tileset_walk_down.png";
               break;
             //left
             case 4:
@@ -136,7 +135,7 @@ class Render {
                     obj.align = -1;
                 }
                 // assign left sprite
-                //img.src = "lib/img/mysprites_tileset_walk_left.png";
+                this.img.src = "lib/img/mysprites_tileset_walk_left.png";
               break;
             default:
               //do nothing
@@ -171,6 +170,7 @@ class Unit extends Render{
     constructor(C){
         super(C);
         this.C = C;
+        this.img = new Image();
     }
 
     // will need to pass thes unitarrays or gps into this or will fail
