@@ -1,0 +1,14 @@
+@charset "UTF-8";
+/* CSS Document */
+body {  
+	margin:0px;  
+	padding:0px;   
+	}  
+	
+canvas{  
+	outline:0;  
+	border:1px solid #000;  
+	margin:50px auto;
+	display:block;
+/*	transform: rotate(-45deg) skew(15deg, 15deg);
+*/	}
