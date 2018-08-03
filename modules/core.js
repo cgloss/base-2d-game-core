@@ -521,7 +521,7 @@ class Controls {
     //and unset them when the right or left key is released
     onKeyUp(evt) {
         if ([38,39,40,37].indexOf(evt.keyCode) !== -1){
-            Object.assign(player, {velocity:0});
+            Object.assign(player, {velocity:0,frame:0});
         }
     }
 }
