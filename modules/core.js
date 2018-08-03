@@ -83,15 +83,12 @@ class Render {
         if(!this.dead){
             this.drawCone();
         }
-
-        //assign default sprite
-        this.img.src = "lib/img/mysprites_tileset_walk_down.png";
         
         //sprite drw animation
         if(!this.dead){
             this.C.ctx.drawImage(this.img,this.frame,0,20,60,this.x-(this.C.settings.imgWidth/2),this.y-this.C.settings.imgHeight,20,60);
             this.animrate = (this.animrate) ? this.animrate-1 : 2;
-            if(!this.animrate){
+            if(!this.animrate && this.velocity){
                 this.frame = (this.frame<60) ? this.frame+20 : 0;
             }
         }
