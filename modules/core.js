@@ -86,7 +86,7 @@ class Render {
         }
         
         //sprite drw animation
-        if(!this.dead){
+        if(!this.dead && this.sprite){
             this.C.ctx.drawImage(this.img,this.frame,0,20,60,this.x-(this.C.settings.imgWidth/2),this.y-this.C.settings.imgHeight,20,60);
             this.animrate = (this.animrate) ? this.animrate-1 : 2;
             if(!this.animrate && this.velocity){
@@ -105,38 +105,39 @@ class Render {
             align: 1
         };
 
-        switch(this.direction)
-            {
-            //up
-            case 1:
-                // assign up sprite
-                this.img.src = "lib/img/mysprites_tileset_walk_up.png";
-                break;
-            //right
-            case 2:
-                obj.align = -1;
-                if(this.choice == 1 && this.bool){
-                    obj.align = 1;
-                }
-                // assign right sprite
-                this.img.src = "lib/img/mysprites_tileset_walk_right.png";
-              break;
-            //down
-            case 3:
-                obj.align = -1;
-                // assign down sprite
-                this.img.src = "lib/img/mysprites_tileset_walk_down.png";
-              break;
-            //left
-            case 4:
-                if(this.choice == 1 && this.bool){
+        if(this.sprite){
+            switch(this.direction){
+                //up
+                case 1:
+                    // assign up sprite
+                    this.img.src = this.sprite.up;
+                    break;
+                //right
+                case 2:
                     obj.align = -1;
-                }
-                // assign left sprite
-                this.img.src = "lib/img/mysprites_tileset_walk_left.png";
-              break;
-            default:
-              //do nothing
+                    if(this.choice == 1 && this.bool){
+                        obj.align = 1;
+                    }
+                    // assign right sprite
+                    this.img.src = this.sprite.right;
+                  break;
+                //down
+                case 3:
+                    obj.align = -1;
+                    // assign down sprite
+                    this.img.src = this.sprite.down;
+                  break;
+                //left
+                case 4:
+                    if(this.choice == 1 && this.bool){
+                        obj.align = -1;
+                    }
+                    // assign left sprite
+                    this.img.src = this.sprite.left;
+                  break;
+                default:
+                  //do nothing
+            }
         }
         this.conePath(obj);
 
@@ -180,15 +181,15 @@ class Unit extends Render{
         var xArr = [];
         var yArr = [];
         var neighborArr = [];
-        var range = (this.size*proximity)*2;
+        var range = this.size*proximity;
         var selfId = this.coordID();
         // build x coords arr
         for (var i = range; i >= 0; i--){
-            xArr.push(this.x-range+i);
+            xArr.push(this.x-range+(i*2));
         }
         // build y coords arr
         for (var i = range; i >= 0; i--){
-            yArr.push(this.y-range+i);
+            yArr.push(this.y-range+(i*2));
         }
         // build all possible combos of x y arrs
         for(var i = 0; i < xArr.length; i++){
@@ -197,6 +198,19 @@ class Unit extends Render{
                 if(potentialMatch==selfId){
                     continue;
                 }
+
+                // debug hitspace
+                this.C.ctx.beginPath();
+                this.C.ctx.moveTo(xArr[i], yArr[j] - 1);
+                this.C.ctx.arc(xArr[i], yArr[j], 1, 0, 2 * Math.PI, false);
+                this.C.ctx.lineWidth = 1;    
+                this.C.ctx.strokeStyle = this.C.stroke;
+                this.C.ctx.stroke();
+                this.C.ctx.fillStyle = this.C.fill;    
+                this.C.ctx.fill();
+                this.C.ctx.closePath();
+
+
                 // check is a coord ID exists
                 if(typeof this.C.gps[potentialMatch] != "undefined"){
                     neighborArr.push(this.C.gps[potentialMatch].unit);
@@ -474,6 +488,13 @@ class Player extends Unit{
         this.animrate = 2;
         this.fill = 'rgba(18, 173, 42, 1)';
         this.stroke = C.settings.stroke;
+        // sprite
+        this.sprite = {
+            up: "lib/img/mysprites_tileset_walk_up.png",
+            right: "lib/img/mysprites_tileset_walk_right.png",
+            down: "lib/img/mysprites_tileset_walk_down.png",
+            left: "lib/img/mysprites_tileset_walk_left.png",
+        };
     }
 }
 
