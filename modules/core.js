@@ -14,7 +14,7 @@ class Core {
             fill: 'rgba(186, 85, 211, .9)',
             stroke: 'rgba(153, 50, 204, .1)',
             config: [
-                { class:Gremlin, count:1 },
+                { class:Gremlin, count:30 },
                 { class:Player, count:1 }
             ]
         };
@@ -40,11 +40,13 @@ class Core {
                 for(var i=0;i<config.length;i++){
                     this.instances(config[i]);
                 }
+                return;
             },
             instances: function(type){
                 for(var i=0;i<type.count;i++){
                     self.unitInstances.push(new type.class(self));
                 }
+                return;
             }
         }
         this.gps = {};
@@ -63,6 +65,7 @@ class Core {
             this.unitInstances[ID].rollDice();
             this.unitInstances[ID].render();
         }
+        return;
     }
 
 }
@@ -93,6 +96,7 @@ class Render {
                 this.frame = (this.frame<60) ? this.frame+20 : 0;
             }
         }
+        return;
     }
     setSprite(){
         if(!this.sprite || !this.direction){
@@ -106,6 +110,7 @@ class Render {
             'left',
         ];
         this.img.src = this.sprite[spriteMap[this.direction]];
+        return;
     }
     drawCone(){
         // detectionRange cone draw
@@ -160,6 +165,7 @@ class Render {
         this.C.ctx.strokeStyle = 'rgba(255, 255, 0, .09)';
         this.C.ctx.stroke();
         this.C.ctx.closePath();
+        return;
     }
 
     conePath(obj){
@@ -173,6 +179,7 @@ class Render {
             this.C.ctx.lineTo(this.x+(obj.L * (obj.align * -1)), this.y+(obj.W * (obj.align * -1)));
             this.C.ctx.lineTo(this.x+(obj.L * (obj.align * -1)), this.y+(obj.W * obj.align));
         }
+        return;
     }
 }
 
@@ -189,45 +196,36 @@ class Unit extends Render{
     };
 
     findNeighbors(proximity=1){
-        var xArr = [];
-        var yArr = [];
+        var coordInRange = [];
         var neighborArr = [];
         var range = this.size*proximity;
         var selfId = this.coordID();
-        // build x coords arr
+        
+        // build x/y coords arr
         for (var i = range; i >= 0; i--){
-            xArr.push(this.x-range+(i*2));
+            for (var j = range; j >= 0; j--){
+            
+            // for debug 
+            //coordInRange.push([((this.x+(range/2))-i),((this.y+(range/2))-j)]);
+
+            // build key list
+            coordInRange.push('x'+((this.x+(range/2))-i)+'y'+((this.y+(range/2))-j));
+            }
         }
-        // build y coords arr
-        for (var i = range; i >= 0; i--){
-            yArr.push(this.y-range+(i*2));
-        }
-        // build all possible combos of x y arrs
-        for(var i = 0; i < xArr.length; i++){
-             for(var j = 0; j < yArr.length; j++){
-                var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
-                if(potentialMatch==selfId){
-                    continue;
-                }
 
-                // debug hitspace
-                this.C.ctx.beginPath();
-                this.C.ctx.moveTo(xArr[i], yArr[j] - 1);
-                this.C.ctx.arc(xArr[i], yArr[j], 1, 0, 2 * Math.PI, false);
-                this.C.ctx.lineWidth = 1;    
-                this.C.ctx.strokeStyle = this.C.stroke;
-                this.C.ctx.stroke();
-                this.C.ctx.fillStyle = this.C.fill;    
-                this.C.ctx.fill();
-                this.C.ctx.closePath();
+        for(var i = 0; i < coordInRange.length; i++){
+            // debug hitspace
+            // this.C.ctx.beginPath();
+            // this.C.ctx.moveTo(coordInRange[i][0],coordInRange[i][1]);
+            // this.C.ctx.arc(coordInRange[i][0],coordInRange[i][1], 1, 0, 2 * Math.PI, false);
+            // this.C.ctx.fillStyle = this.C.fill;    
+            // this.C.ctx.fill();
+            // this.C.ctx.closePath();
 
-
-                // check is a coord ID exists
-                if(typeof this.C.gps[potentialMatch] != "undefined"){
-                    neighborArr.push(this.C.gps[potentialMatch].unit);
-                    return neighborArr;
-                }        
-             }
+            // check is a coord ID exists
+            if(typeof this.C.gps[coordInRange[i]] != "undefined"){
+                neighborArr.push(this.C.gps[coordInRange[i]].unit);
+            } 
         }
         return neighborArr;   
     };
@@ -256,6 +254,7 @@ class Unit extends Render{
             single.direction = 2;
             single.x += single.velocity;
         }
+        return single;
     }
 
     futurePosition() {
@@ -307,7 +306,8 @@ class Unit extends Render{
         if(target.x > this.x){
             this.direction = 2;
             this.x += this.velocity;
-        }     
+        }
+        return;     
     }
 
    move() {          
@@ -365,6 +365,7 @@ class Unit extends Render{
             }
         
         }
+        return;
     }
 
     rollDice() {
@@ -477,6 +478,8 @@ class Unit extends Render{
             }
 
         }
+
+        return;
     }
 }
 
@@ -593,7 +596,7 @@ function timeLoop() {
     core.ctx.clearRect(0,0,core.c.width,core.c.height);
     core.render();
 } 
-let init = setInterval(timeLoop, 1000 / 60);
+let init = setInterval(timeLoop, 1000 / 30);
 
 // //helper functions
 // core.c.addEventListener("mousedown", unitInteraction, false);
