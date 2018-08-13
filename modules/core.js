@@ -26,7 +26,7 @@ class Core {
         this.c.width = this.settings.width;  
         this.c.height = this.settings.height;
 
-        this.unitInstances = new Array();
+        this.gps = {};
 
         // variable operators
         this.operators = {
@@ -43,27 +43,31 @@ class Core {
                 return;
             },
             instances: function(type){
+                let unit = null;
                 for(var i=0;i<type.count;i++){
-                    self.unitInstances.push(new type.class(self));
+                    unit = new type.class(self);
+                    unit.last = unit.coordID();
+                    self.gps[unit.last] = {unit:unit};
+                }
+                if(unit instanceof Player){
+                    self.player = unit;
                 }
                 return;
             }
         }
-        this.gps = {};
+        
         this.init = this.generate.units(this.settings.config);
-        this.player = this.unitInstances.find(unit => unit instanceof Player);
     }
 
     isOdd(num){ return num % 2; };
     
     render() {
-        // console.log(this.gps);
-        for (var ID=0;ID<this.unitInstances.length;ID++){
-            this.unitInstances[ID].last = this.unitInstances[ID].coordID();
-            // build coordinate index id
-            this.gps[this.unitInstances[ID].last] = {index:ID, unit:this.unitInstances[ID]};
-            this.unitInstances[ID].rollDice();
-            this.unitInstances[ID].render();
+        for (let key in this.gps){
+            this.gps[key].unit.rollDice();
+            let unit = this.gps[key].unit.render();
+            delete this.gps[key];
+            unit.last = unit.coordID();
+            this.gps[unit.last] = {unit:unit};
         }
         return;
     }
@@ -96,7 +100,7 @@ class Render {
                 this.frame = (this.frame<60) ? this.frame+20 : 0;
             }
         }
-        return;
+        return this;
     }
     setSprite(){
         if(!this.sprite || !this.direction){
@@ -472,9 +476,9 @@ class Unit extends Render{
             
             if(this.collision < 1 || this.wall != this.direction){
                 this.move();
-                if(this.coordID() != this.last && this.C.gps[this.last]){
-                    delete this.C.gps[this.last];
-                }
+                // if(this.coordID() != this.last && this.C.gps[this.last]){
+                //     delete this.C.gps[this.last];
+                // }
             }
 
         }
