@@ -63,11 +63,11 @@ class Core {
     
     render() {
         for (let key in this.gps){
-            this.gps[key].unit.rollDice();
             let unit = this.gps[key].unit.render();
+            unit.last = key;
             delete this.gps[key];
-            unit.last = unit.coordID();
-            this.gps[unit.last] = {unit:unit};
+            unit.rollDice();
+            this.gps[unit.coordID()] = {unit:unit};
         }
         return;
     }
@@ -419,18 +419,18 @@ class Unit extends Render{
                     this.velocity= Math.floor(Math.random() * core.settings.velocity)+1;
 
                     // new collision base on gps
-                    // var collision = findNeighbors(this);
-                    // if(collision.length){
-                    //     for (i of collision){
-                    //         if(arr[i] instanceof Unit){
-                    //             this.bool=!arr[i].bool;
-                    //             this.collision=1;
-                    //             this.wall = arr[i].direction;
-                    //             this.velocity = arr[i].velocity > 0 ? (arr[i].velocity*.75) : settings.velocity;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
+                    var collision = this.findNeighbors(this);
+                    if(collision.length){
+                        for (var collider of collision){
+                            if(collider instanceof Unit){
+                                this.bool=!collider.bool;
+                                this.collision=1;
+                                this.wall = collider.direction;
+                                this.velocity = collider.velocity > 0 ? (collider.velocity*.75) : settings.velocity;
+                                break;
+                            }
+                        }
+                    }
 // todo this should be run 1 time, and in the process as its running we assing the proximity, and check agains the various needs
                     // new grouping base on gps
                     // var grouping = findNeighbors(this,settings.groupingRange);
@@ -476,9 +476,6 @@ class Unit extends Render{
             
             if(this.collision < 1 || this.wall != this.direction){
                 this.move();
-                // if(this.coordID() != this.last && this.C.gps[this.last]){
-                //     delete this.C.gps[this.last];
-                // }
             }
 
         }
