@@ -63,9 +63,6 @@ class Core {
         for (let key in this.gps){
             // temp store unit from the next move
             let unit = this.gps[key].unit.rollDice();
-            // render this unit at its new position
-            unit.render();
-
             let id = unit.coordID();
             
             // check to prevent overlap
@@ -76,7 +73,13 @@ class Core {
                 if(unit._id === this.gps[key].unit._id){
                     // delete the current position of unit from the mastor record
                     delete this.gps[key];
+                    // render this unit at its new position
+                    unit.render();
+                }else{
+                    this.gps[key].unit.render();
                 }
+            }else{
+                this.gps[key].unit.render();
             }
         }
         return;
