@@ -12,7 +12,6 @@ class Core {
             unitSize:4,
             hitSize:5,
             fill: 'rgba(186, 85, 211, .9)',
-            stroke: 'rgba(153, 50, 204, .1)',
             config: [
                 { class:Gremlin, count:30 },
                 { class:Player, count:1 }
@@ -46,8 +45,7 @@ class Core {
                 let unit = null;
                 for(var i=0;i<type.count;i++){
                     unit = new type.class(self);
-                    unit.last = unit.coordID();
-                    self.gps[unit.last] = {unit:unit};
+                    self.gps[unit.coordID()] = {unit:unit};
                 }
                 if(unit instanceof Player){
                     self.player = unit;
@@ -63,11 +61,23 @@ class Core {
     
     render() {
         for (let key in this.gps){
-            let unit = this.gps[key].unit.render();
-            unit.last = key;
-            delete this.gps[key];
-            unit.rollDice();
-            this.gps[unit.coordID()] = {unit:unit};
+            // temp store unit from the next move
+            let unit = this.gps[key].unit.rollDice();
+            // render this unit at its new position
+            unit.render();
+
+            let id = unit.coordID();
+            
+            // check to prevent overlap
+            if(typeof this.gps[id] == "undefined"){
+                // reinsert unit into mastor record at new coord id
+                this.gps[id] = {unit:unit};
+                // verify that the entry is the same id before deletion
+                if(unit._id === this.gps[key].unit._id){
+                    // delete the current position of unit from the mastor record
+                    delete this.gps[key];
+                }
+            }
         }
         return;
     }
@@ -82,9 +92,6 @@ class Render {
         this.C.ctx.beginPath();
         this.C.ctx.moveTo(this.x, this.y - this.size);
         this.C.ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI, false);
-        this.C.ctx.lineWidth = this.size;    
-        this.C.ctx.strokeStyle = this.stroke;
-        this.C.ctx.stroke();
         this.C.ctx.fillStyle = this.fill;    
         this.C.ctx.fill();
         this.C.ctx.closePath();
@@ -192,6 +199,9 @@ class Unit extends Render{
         super(C);
         this.C = C;
         this.img = new Image();
+        // random unique id
+        this._id = (Date.now().toString(36) + Math.random().toString(36).substr(2, 9)).toUpperCase();
+        this.timestamp = Date.now();
     }
 
     // will need to pass thes unitarrays or gps into this or will fail
@@ -369,6 +379,8 @@ class Unit extends Render{
             }
         
         }
+        // update timestamp for current 'move'
+        this.timestamp = Date.now();
         return;
     }
 
@@ -448,7 +460,7 @@ class Unit extends Render{
                     
                     var pursuit = this.findNeighbors(this.detectionRange);
                     if(pursuit.length>=1){
-                        console.log(pursuit);
+                        // console.log(pursuit);
                         for (var pursue of pursuit){
                             if(pursue instanceof Player){
                                 this.pursuit = pursue;
@@ -458,7 +470,7 @@ class Unit extends Render{
                     }
                     // handle unit changes and persistance of pursuit
                     if(this.pursuit){
-                        console.log(this.pursuit);
+                        // console.log(this.pursuit);
                         // for testing only, though could make a diff sprite frame for in pursuit
                         this.fill = 'red';
                         this.pursuitCourse(this.pursuit.futurePosition());
@@ -480,7 +492,7 @@ class Unit extends Render{
 
         }
 
-        return;
+        return this;
     }
 }
 
@@ -541,7 +553,6 @@ class Gremlin extends Unit{
 class Controls {
     constructor(C){
         this.player = C.player;
-        console.log(this.player);
         document.addEventListener("keydown", this.onKeyDown.bind(this));
         document.addEventListener("keyup", this.onKeyUp.bind(this));
     }
