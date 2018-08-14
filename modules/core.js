@@ -169,11 +169,11 @@ class Render {
         this.conePath(obj);
 
         this.C.ctx.lineTo(this.x, this.y);  
-        this.C.ctx.fillStyle = 'rgba(255, 255, 0, .05)';
+        this.C.ctx.fillStyle = 'rgba(255, 255, 0, .02)';
         this.C.ctx.fill();
         
-        this.C.ctx.lineWidth = this.size;
-        this.C.ctx.strokeStyle = 'rgba(255, 255, 0, .09)';
+        this.C.ctx.lineWidth = 1;
+        this.C.ctx.strokeStyle = 'rgba(255, 255, 0, .05)';
         this.C.ctx.stroke();
         this.C.ctx.closePath();
         return;
@@ -514,7 +514,6 @@ class Player extends Unit{
         this.frame = 0;
         this.animrate = 2;
         this.fill = 'rgba(18, 173, 42, 1)';
-        this.stroke = C.settings.stroke;
         // sprite
         this.sprite = {
             up: "lib/img/mysprites_tileset_walk_up.png",
@@ -543,7 +542,6 @@ class Gremlin extends Unit{
         this.frame = 0;
         this.animrate = 2;
         this.fill = C.settings.fill;
-        this.stroke = C.settings.stroke;
         this.persistance = 1000;
         this.groupingRange = 5;
         this.detectionRange = 15;
