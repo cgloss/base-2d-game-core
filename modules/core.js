@@ -59,6 +59,10 @@ class Core {
 
     isOdd(num){ return num % 2; };
 
+    rng(max) {
+      return Math.floor(Math.random() * Math.floor(max));
+    }
+
     render() {
         for (let key in this.gps){
             // temp store unit from the next move
@@ -211,6 +215,12 @@ class Unit extends Render{
         return 'x'+ Math.floor(location.x) + 'y' + Math.floor(location.y);
     };
 
+    getDefault(key){
+        let objClass = this.constructor;
+        let inst = new objClass(this.C);
+        return inst[key];
+    }
+
     // this things perf is shit, fix it.
     findNeighbors(proximity=1){
         var coordInRange = [];
@@ -231,7 +241,8 @@ class Unit extends Render{
 
         for(var i = 0; i < coordInRange.length; i++){
             // check is a coord ID exists
-            if(typeof this.C.gps[coordInRange[i]] != "undefined"){
+            if(this.C.gps.hasOwnProperty(coordInRange[i])){
+            //if(typeof this.C.gps[coordInRange[i]] != "undefined"){
                 // ensure that any remnant instance of this id is not pushed
                 if(this.C.gps[coordInRange[i]].unit._id !== this._id){
                     neighborArr.push(this.C.gps[coordInRange[i]].unit);
@@ -428,7 +439,7 @@ class Unit extends Render{
                     this.velocity= Math.floor(Math.random() * core.settings.velocity)+1;
 
                     // new collision base on gps
-                    var collision = this.findNeighbors(2); // set to 2 to account for size of both self and any colliders
+                    var collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
                     if(collision.length){
                         for (var collider of collision){
                             this.bool=!collider.bool;
@@ -453,29 +464,29 @@ class Unit extends Render{
                     //     }
                     // }
                     
-                    // var pursuit = this.findNeighbors(this.detectionRange);
-                    // if(pursuit.length>=1){
-                    //     // console.log(pursuit);
-                    //     for (var pursue of pursuit){
-                    //         if(pursue instanceof Player){
-                    //             this.pursuit = pursue;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-                    // // handle unit changes and persistance of pursuit
-                    // if(this.pursuit){
-                    //     // console.log(this.pursuit);
-                    //     // for testing only, though could make a diff sprite frame for in pursuit
-                    //     this.fill = 'red';
-                    //     this.pursuitCourse(this.pursuit.futurePosition());
-                    //     this.persistance -= 1;
-                    //     if(this.persistance < 1){
-                    //         this.pursuit = false;
-                    //         this.fill = core.settings.fill;
-                    //         this.persistance = Math.floor(Math.random() * 100)+15;
-                    //     }
-                    // }
+                    var pursuit = this.findNeighbors(this.detectionRange);
+                    if(pursuit.length>=1){
+                        // console.log(pursuit);
+                        for (var pursue of pursuit){
+                            if(pursue instanceof Player){
+                                this.pursuit = pursue;
+                                break;
+                            }
+                        }
+                    }
+                    // handle unit changes and persistance of pursuit
+                    if(this.pursuit){
+                        // console.log(this.pursuit);
+                        // for testing only, though could make a diff sprite frame for in pursuit
+                        this.fill = 'red';
+                        this.pursuitCourse(this.pursuit.futurePosition());
+                        this.persistance -= 1;
+                        if(this.persistance < 1){
+                            this.pursuit = false;
+                            this.fill = core.settings.fill;
+                            this.persistance = this.C.rng(this.getDefault('persistance'));
+                        }
+                    }
 
                 }
                             
@@ -537,7 +548,7 @@ class Gremlin extends Unit{
         this.frame = 0;
         this.animrate = 2;
         this.fill = C.settings.fill;
-        this.persistance = 1000;
+        this.persistance = 100;
         this.groupingRange = 5;
         this.detectionRange = 15;
     }
@@ -601,7 +612,7 @@ function timeLoop() {
     core.ctx.clearRect(0,0,core.c.width,core.c.height);
     core.render();
 } 
-let init = setInterval(timeLoop, 1000 / 30);
+let init = setInterval(timeLoop, 1000 / 60);
 
 // //helper functions
 // core.c.addEventListener("mousedown", unitInteraction, false);
