@@ -433,9 +433,8 @@ class Unit extends Render{
                         for (var collider of collision){
                             this.bool=!collider.bool;
                             this.collision+= 1;
-                            // this use of the decimal, is actually slowing this down enough to prevernt wall esacapes... fix that and remove this
-                            // something is rotten in denmark
-                            //this.velocity+=.5; // partial fix by ignoring self and remnant, but if another collides it messes up the remnant to force out of the bounding box
+                            this.wall = this.direction;
+                            this.velocity = 0; 
                             break;
                         }
                     }
@@ -602,7 +601,7 @@ function timeLoop() {
     core.ctx.clearRect(0,0,core.c.width,core.c.height);
     core.render();
 } 
-let init = setInterval(timeLoop, 1000 / 60);
+let init = setInterval(timeLoop, 1000 / 30);
 
 // //helper functions
 // core.c.addEventListener("mousedown", unitInteraction, false);
