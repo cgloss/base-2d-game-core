@@ -436,7 +436,7 @@ class Unit extends Render{
                 if(!(this instanceof Player)){
 
                     // rng velocity set
-                    this.velocity= Math.floor(Math.random() * core.settings.velocity)+1;
+                    this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
 
                     // new collision base on gps
                     var collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
@@ -451,18 +451,16 @@ class Unit extends Render{
                     }
 // todo this should be run 1 time, and in the process as its running we assing the proximity, and check agains the various needs
                     // new grouping base on gps
-                    // var grouping = findNeighbors(this,settings.groupingRange);
-                    // if(grouping.length){
-                    //     for (i of grouping){
-                    //         if(arr[i] instanceof Unit){
-                    //             this.direction = arr[i].direction;   
-                    //             this.decision=arr[i].decision;
-                    //             this.velocity=arr[i].velocity;
-                    //             this.bool=arr[i].bool;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
+                    var group = this.findNeighbors(this.groupingRange);
+                    if(group.length){
+                        for (var leader of group){
+                            this.direction = leader.direction;   
+                            this.decision=leader.decision;
+                            this.velocity=leader.velocity;
+                            this.bool=leader.bool;
+                            break;
+                        }
+                    }
                     
                     var pursuit = this.findNeighbors(this.detectionRange);
                     if(pursuit.length>=1){
@@ -549,7 +547,7 @@ class Gremlin extends Unit{
         this.animrate = 2;
         this.fill = C.settings.fill;
         this.persistance = 100;
-        this.groupingRange = 5;
+        this.groupingRange = 10;
         this.detectionRange = 15;
     }
 }
