@@ -285,6 +285,22 @@ class Unit extends Render{
         return single;
     }
 
+    locateDirection(unit){
+        if(this.y < unit.y){
+            return 1; // up
+        }
+        if(this.x < unit.x){
+            return 2; // left
+        }
+        if(this.y > unit.y){
+            return 3; // down
+        }
+        if(this.x > unit.x){
+            return 4; // right
+        }
+        return this.direction;
+    }
+
     futurePosition() {
         // returns estimated future postion {x,y}
         let futurePos = {x:this.x,y:this.y}
@@ -447,13 +463,18 @@ class Unit extends Render{
                 if(collision.length){
                     for (var collider of collision){
                         this.bool=!collider.bool;
-                        this.collision+= 1;
-                        this.wall = this.direction;
-                        this.velocity = 0; 
+                        this.collision= 1;
+                        this.wall = this.locateDirection(collider);
                         break;
                     }
                 }
 
+                if(this instanceof Player){
+                    console.log(this.direction,this.wall);
+                }
+                if(this.collision && this.wall == this.direction){
+                    this.velocity = 0; 
+                }
                 //negate player
                 if(!(this instanceof Player)){
 
