@@ -443,23 +443,23 @@ class Unit extends Render{
                 this.collision=0;
                 this.wall = null;
                 
+                var collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
+                if(collision.length){
+                    for (var collider of collision){
+                        this.bool=!collider.bool;
+                        this.collision+= 1;
+                        this.wall = this.direction;
+                        this.velocity = 0; 
+                        break;
+                    }
+                }
+
                 //negate player
                 if(!(this instanceof Player)){
 
                     // rng velocity set
-                    this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
+                    // this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
 
-                    // new collision base on gps
-                    var collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
-                    if(collision.length){
-                        for (var collider of collision){
-                            this.bool=!collider.bool;
-                            this.collision+= 1;
-                            this.wall = this.direction;
-                            this.velocity = 0; 
-                            break;
-                        }
-                    }
 // todo this should be run 1 time, and in the process as its running we assing the proximity, and check agains the various needs
                     // new grouping base on gps
                     var group = this.findNeighbors(this.groupingRange);
