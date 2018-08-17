@@ -333,7 +333,7 @@ class Unit extends Render{
     }
 
    move() {          
-        if(this instanceof Unit){
+        if(!(this instanceof Player)){
 
             this.decisionLog.push(this.direction);
      
@@ -350,7 +350,7 @@ class Unit extends Render{
             }
         }
         
-        if(!this.change && this.wall != 0){
+        if(this.wall != 0){
             
             switch(this.direction){
                 //up
@@ -395,9 +395,7 @@ class Unit extends Render{
     rollDice() {
         // check for pulse
         if(!this.dead){
-        
-            this.decision += Math.floor(Math.random() * 4)+1;
-            
+                    
             //initial collision detect
             if(this.x<=this.size||this.x>=core.c.width-this.size||this.y<=this.size||this.y>=core.c.height-this.size){
 
@@ -406,7 +404,7 @@ class Unit extends Render{
                     this.wall = this.direction;
                 }
                 
-                if(this instanceof Unit){
+                if(!(this instanceof Player)){
                     switch(this.wall){
                         case 0:
                         this.direction=Math.floor(Math.random() * 4)+1;
@@ -455,7 +453,6 @@ class Unit extends Render{
                     if(group.length){
                         for (var leader of group){
                             this.direction = leader.direction;   
-                            this.decision=leader.decision;
                             this.velocity=leader.velocity;
                             this.bool=leader.bool;
                             break;
@@ -508,7 +505,6 @@ class Player extends Unit{
         this.size = C.settings.unitSize*2;
         this.velocity = 0;
         this.direction = 0; 
-        this.decision = 0;
         this.collision = 0;
         this.bool = 0;
         this.choice = 0;
@@ -536,7 +532,6 @@ class Gremlin extends Unit{
         this.size = C.settings.unitSize;
         this.velocity = C.settings.velocity;
         this.direction = 0; 
-        this.decision = 0;
         this.collision = 0;
         this.bool = (Math.floor(Math.random() * 2) == 0);
         this.choice = Math.floor(Math.random()*2) == 1 ? 1 : -1;
