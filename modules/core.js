@@ -13,6 +13,7 @@ class Core {
             hitSize:5,
             fill: 'rgba(186, 85, 211, .9)',
             config: [
+                { class:Wall, count:1, x:250, y:250, fill:'rgba(255, 255, 255, 1)',size:10},
                 { class:Gremlin, count:30 },
                 { class:Player, count:1 }
             ]
@@ -41,10 +42,10 @@ class Core {
                 }
                 return;
             },
-            instances: function(type){
+            instances: function(config){
                 let unit = null;
-                for(var i=0;i<type.count;i++){
-                    unit = new type.class(self);
+                for(var i=0;i<config.count;i++){
+                    unit = new config.class(self,config);
                     self.gps[unit.coordID()] = {unit:unit};
                 }
                 if(unit instanceof Player){
@@ -101,6 +102,11 @@ class Render {
         this.C.ctx.fillStyle = this.fill;    
         this.C.ctx.fill();
         this.C.ctx.closePath();
+        
+        if(this instanceof Wall){
+            return this;
+        }
+        
         if(!this.dead){
             this.drawCone();
         }
@@ -332,7 +338,10 @@ class Unit extends Render{
         return;     
     }
 
-   move() {          
+   move() {
+        if(this instanceof Wall){
+            return;
+        }
         if(!(this instanceof Player)){
 
             this.decisionLog.push(this.direction);
@@ -393,6 +402,10 @@ class Unit extends Render{
     }
 
     rollDice() {
+        if(this instanceof Wall){
+            return this;
+        }
+
         // check for pulse
         if(!this.dead){
                     
@@ -544,6 +557,16 @@ class Gremlin extends Unit{
         this.persistance = 100;
         this.groupingRange = 10;
         this.detectionRange = 15;
+    }
+}
+
+class Wall extends Unit{
+    constructor(C,config){
+        super(C);
+        this.x = config.x;
+        this.y = config.y; 
+        this.size = config.size;
+        this.fill = config.fill;
     }
 }
 
