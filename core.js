@@ -1,3 +1,14 @@
+/**
+ *  Base 2d game classes
+ *
+ *  Classes -
+ *      Core handles configuration settings, contexting, and initial generation of instances
+ *      Controls adds event listeners for player controls
+ *      Render draws unit instances after processing, view cones, and sprites
+ *      Unit base class for unit type classes and all unit logic based on configuration of specific classes which extend it
+ *
+ *  [@cgloss](https://github.com/cgloss)
+*/
 class Core {
     constructor(canvas) {
         let self = this;
@@ -14,7 +25,7 @@ class Core {
             fill: 'rgba(186, 85, 211, .9)',
             config: [
                 { class:Wall, count:1, x:250, y:250, fill:'rgba(255, 255, 255, 1)',size:10},
-                { class:Gremlin, count:30 },
+                { class:Gremlin, count:10 },
                 { class:Player, count:1 }
             ]
         };
@@ -89,6 +100,31 @@ class Core {
         return;
     }
 
+}
+
+class Controls {
+    constructor(C){
+        this.player = C.player;
+        document.addEventListener("keydown", this.onKeyDown.bind(this));
+        document.addEventListener("keyup", this.onKeyUp.bind(this));
+    }
+    //set rightDown or leftDown if the right or left keys are down
+    onKeyDown(e) {
+        if ([38,39,40,37].indexOf(e.keyCode) !== -1){
+            if (e.keyCode == 38) Object.assign(this.player, {direction:1,velocity:4}) // up
+            if (e.keyCode == 39) Object.assign(this.player, {direction:2,velocity:4}) // right
+            if (e.keyCode == 40) Object.assign(this.player, {direction:3,velocity:4}) // down
+            if (e.keyCode == 37) Object.assign(this.player, {direction:4,velocity:4}) // left
+            e.preventDefault();
+        }
+    }
+
+    //and unset them when the right or left key is released
+    onKeyUp(e) {
+        if ([38,39,40,37].indexOf(e.keyCode) !== -1){
+            Object.assign(this.player, {velocity:0,frame:0});
+        }
+    }
 }
 
 class Render {
@@ -195,7 +231,7 @@ class Render {
         if(this.bool){
             this.C.ctx.lineTo(this.x+(obj.L * this.choice) * obj.align, this.y+(obj.W * (obj.align * -1)));
             this.C.ctx.lineTo(this.x+(obj.W * this.choice) * obj.align, this.y+(obj.L * (obj.align * -1)));
-        }else if(core.isOdd(this.direction)){
+        }else if(this.C.isOdd(this.direction)){
             this.C.ctx.lineTo(this.x+(obj.W * (obj.align * -1)), this.y+(obj.L * (obj.align * -1)));
             this.C.ctx.lineTo(this.x+(obj.W * obj.align), this.y+(obj.L * (obj.align * -1)));
         }else{
@@ -216,7 +252,7 @@ class Unit extends Render{
         this.timestamp = Date.now();
     }
 
-    // will need to pass thes unitarrays or gps into this or will fail
+    // will need to pass these unitarrays or gps into this or will fail
     coordID(location=this){
         return 'x'+ Math.floor(location.x) + 'y' + Math.floor(location.y);
     };
@@ -227,7 +263,7 @@ class Unit extends Render{
         return inst[key];
     }
 
-    // this things perf is shit, fix it.
+    // todo work on this methods performance, the prior iteration using array instead of gps was faster.
     findNeighbors(proximity=1){
         var coordInRange = [];
         var neighborArr = [];
@@ -426,7 +462,7 @@ class Unit extends Render{
         if(!this.dead){
                     
             //initial collision detect
-            if(this.x<=this.size||this.x>=core.c.width-this.size||this.y<=this.size||this.y>=core.c.height-this.size){
+            if(this.x<=this.size||this.x>=this.C.c.width-this.size||this.y<=this.size||this.y>=this.C.c.height-this.size){
 
                 this.collision+=1;
                 if(this.collision <= 1){
@@ -470,7 +506,7 @@ class Unit extends Render{
                 }
 
                 if(this instanceof Player){
-                    console.log(this.direction,this.wall);
+                    //console.log(this.direction,this.wall);
                 }
                 if(this.collision && this.wall == this.direction){
                     this.velocity = 0; 
@@ -481,7 +517,7 @@ class Unit extends Render{
                     // rng velocity set
                     // this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
 
-// todo this should be run 1 time, and in the process as its running we assing the proximity, and check agains the various needs
+                    // todo this should be run 1 time, and in the process as its running we assing the proximity, and check agains the various needs
                     // new grouping base on gps
                     var group = this.findNeighbors(this.groupingRange);
                     if(group.length){
@@ -512,7 +548,7 @@ class Unit extends Render{
                         this.persistance -= 1;
                         if(this.persistance < 1){
                             this.pursuit = false;
-                            this.fill = core.settings.fill;
+                            this.fill = this.C.settings.fill;
                             this.persistance = this.C.rng(this.getDefault('persistance'));
                         }
                     }
@@ -531,6 +567,9 @@ class Unit extends Render{
     }
 }
 
+// Unit Classes
+
+// example player class
 class Player extends Unit{
     constructor(C){
         super(C);
@@ -558,6 +597,7 @@ class Player extends Unit{
     }
 }
 
+// example unit class
 class Gremlin extends Unit{
     constructor(C){
         super(C);
@@ -590,97 +630,3 @@ class Wall extends Unit{
         this.fill = config.fill;
     }
 }
-
-class Controls {
-    constructor(C){
-        this.player = C.player;
-        document.addEventListener("keydown", this.onKeyDown.bind(this));
-        document.addEventListener("keyup", this.onKeyUp.bind(this));
-    }
-    //set rightDown or leftDown if the right or left keys are down
-    onKeyDown(e) {
-        if ([38,39,40,37].indexOf(e.keyCode) !== -1){
-            if (e.keyCode == 38) Object.assign(this.player, {direction:1,velocity:4}) // up
-            if (e.keyCode == 39) Object.assign(this.player, {direction:2,velocity:4}) // right
-            if (e.keyCode == 40) Object.assign(this.player, {direction:3,velocity:4}) // down
-            if (e.keyCode == 37) Object.assign(this.player, {direction:4,velocity:4}) // left
-            e.preventDefault();
-        }
-    }
-
-    //and unset them when the right or left key is released
-    onKeyUp(e) {
-        if ([38,39,40,37].indexOf(e.keyCode) !== -1){
-            Object.assign(this.player, {velocity:0,frame:0});
-        }
-    }
-}
-
-var core = new Core(document.getElementsByTagName ('canvas')[0]);
-let userControls = new Controls(core);
-
-// // wrote this in a haze a while back.. I think the intent is to go toward or away from another based on bool
-// function disposition(disp,arr,ID,i){
-        
-//         if(disp){
-//         var l = '<';
-//         var g = '>';
-//         }else{
-//         var l = '>';
-//         var g = '<';    
-//         }
-        
-//         // possibilities
-//         if((arr[ID].direction==1 && arr[i].direction == 1 && operators[l](arr[ID].y, arr[i].y)) || arr[ID].direction==3 && arr[i].direction == 3 && operators[g](arr[ID].y, arr[i].y) || (arr[ID].direction==1 && arr[i].direction == 3 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==3 && arr[i].direction == 1 && operators[g](arr[ID].y, arr[i].y)) || (arr[ID].direction==3 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[l](arr[ID].y, arr[i].y))){
-//             arr[ID].direction=3;                
-//         }
-//         if((arr[ID].direction==1 && arr[i].direction == 1 && operators[g](arr[ID].y, arr[i].y)) || arr[ID].direction==3 && arr[i].direction == 3 && operators[l](arr[ID].y, arr[i].y) || (arr[ID].direction==1 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==1 && arr[i].direction == 3 && operators[l](arr[ID].y, arr[i].y)) || arr[ID].direction==1 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x) || (arr[ID].direction==3 && arr[i].direction == 1 && operators[l](arr[ID].y, arr[i].y))){
-//             arr[ID].direction=1;                
-//         }
-//         if((arr[ID].direction==2 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || arr[ID].direction==4 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x) || (arr[ID].direction==1 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 1 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 3 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 1 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[g](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 3 && operators[g](arr[ID].x, arr[i].x))){
-//             arr[ID].direction=2;                
-//         }
-//         if((arr[ID].direction==2 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || arr[ID].direction==4 && arr[i].direction == 4 && operators[g](arr[ID].x, arr[i].x) || (arr[ID].direction==1 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 1 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 3 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==2 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==3 && arr[i].direction == 4 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 1 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 2 && operators[l](arr[ID].x, arr[i].x)) || (arr[ID].direction==4 && arr[i].direction == 3 && operators[l](arr[ID].x, arr[i].x))){
-//             arr[ID].direction=4;                
-//         }
-// }
-
-function timeLoop() {
-    core.ctx.clearRect(0,0,core.c.width,core.c.height);
-    core.render();
-} 
-let init = setInterval(timeLoop, 1000 / 60);
-
-// //helper functions
-// core.c.addEventListener("mousedown", unitInteraction, false);
-
-// function unitInteraction(e){  
-//     var x = e.offsetX;
-//     var y = e.offsetY;
-//     var clicked = findNearest({x:x,y:y});
-//     console.log(clicked);
-// }
-
-// findNearest(location){
-//         var xArr = [];
-//         var yArr = [];
-//         var range = 20;
-//         var selfId = this.coordID(location);
-//         // build x coords arr
-//         for (var i = range; i >= 0; i--){
-//             xArr.push(location.x-range+i);
-//         }
-//         // build y coords arr
-//         for (var i = range; i >= 0; i--){
-//             yArr.push(location.y-range+i);
-//         }
-//         for(var i = 0; i < xArr.length; i++){
-//              for(var j = 0; j < yArr.length; j++){
-//                 var potentialMatch = 'x'+xArr[i]+'y'+yArr[j];
-//                 // check is a coord ID exists in thei frame for this potential combo
-//                 if(typeof gps[potentialMatch] != "undefined"){
-//                     return gps[potentialMatch];
-//                 }        
-//              }
-//         }    
-//     }
