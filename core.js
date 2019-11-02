@@ -9,6 +9,12 @@
  *
  *  [@cgloss](https://github.com/cgloss)
 */
+
+// TODOS
+// push units
+// foot prints
+// trail following
+
 class Core {
   constructor(canvas) {
     let self = this;
@@ -25,7 +31,7 @@ class Core {
       fill: 'rgba(186, 85, 211, .9)',
       config: [
         { class:Wall, count:1, x:250, y:250, fill:'rgba(255, 255, 255, 1)',size:10},
-        { class:Gremlin, count:10 },
+        { class:Gremlin, count:0 },
         { class:Player, count:1 }
       ]
     };
@@ -321,9 +327,10 @@ class Unit extends Render{
     return single;
   }
 
-  locateDirection(unit){
+  locateRelativeDirection(unit){
     let dir = {x:0,y:0};
 
+    // set default of current direction
     if(this.direction){
       if(this.direction == 1 || this.direction == 3){
         dir.y = this.direction;
@@ -333,14 +340,14 @@ class Unit extends Render{
       }
     }
 
-    if(this.y < unit.y){
-      dir.y = 1; // up
+    if(this.y > unit.y){
+      dir.y = 1; // down
     }
     if(this.x < unit.x){
       dir.x = 2; // left
     }
-    if(this.y > unit.y){
-      dir.y = 3; // down
+    if(this.y < unit.y){
+      dir.y = 3; // up
     }
     if(this.x > unit.x){
       dir.x = 4; // right
@@ -499,10 +506,7 @@ class Unit extends Render{
         if(this.collision <= 1){
           this.wall = this.direction;
         }
-
-        //if(!(this instanceof Player)){
-          this.turnAround();
-        //}
+        this.turnAround();
 
       }else{
 
@@ -510,22 +514,23 @@ class Unit extends Render{
         this.collision=0;
         this.wall = null;
 
-        var collision = this.findNeighbors(5); // set to 3 to account for size of both self and any colliders
+        var collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
 
         if(collision.length){
+          // remnant, clean up isle 520
           for (var collider of collision){
             this.bool=!collider.bool;
             this.collision= 1;
-            this.wall = this.locateDirection(collider);
+            this.wall = this.locateRelativeDirection(collider);
             break;
           }
         }
 
-        if(this instanceof Player){
-          //console.log(this.direction,this.wall);
-        }
         if(this.collision && this.wall && this.wall.x && this.wall.y){
-          if(this.wall.x == this.direction || this.wall.y == this.direction){
+          if(this.wall.y == this.direction){
+            this.velocity = 0;
+          }
+          if(this.wall.x == this.direction){
             this.velocity = 0;
           }
         }
@@ -535,7 +540,7 @@ class Unit extends Render{
           // rng velocity set
           // this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
 
-          // todo this should be run 1 time, and in the process as its running we assing the proximity, and check agains the various needs
+          // todo this should be run 1 time, and in the process as its running we assing the proximity, and check against the various needs
           // new grouping base on gps
           var group = this.findNeighbors(this.groupingRange);
           if(group.length){
@@ -623,7 +628,7 @@ class Gremlin extends Unit{
     this.y = Math.floor(Math.random() * C.settings.height);
     this.size = C.settings.unitSize;
     this.velocity = C.settings.velocity;
-    this.direction = 0; 
+    this.direction = 0;
     this.collision = 0;
     this.bool = (Math.floor(Math.random() * 2) == 0);
     this.choice = Math.floor(Math.random()*2) == 1 ? 1 : -1;
