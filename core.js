@@ -30,7 +30,27 @@ class Core {
       hitSize:5,
       fill: 'rgba(186, 85, 211, .9)',
       config: [
-        { class:Wall, count:1, x:250, y:250, fill:'rgba(255, 255, 255, 1)',size:10},
+        { class:Wall, count:1, x:180, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:210, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:220, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:230, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+
+        { class:Wall, count:1, x:190, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:190, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+
+        { class:Wall, count:1, x:200, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:200, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+
+        { class:Wall, count:1, x:210, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:210, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+
+        { class:Wall, count:1, x:220, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:210, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:220, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:230, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+
         { class:Gremlin, count:30 },
         { class:Player, count:1 }
       ]
@@ -53,6 +73,9 @@ class Core {
     };
 
     this.generate = {
+      add: function(config){
+        this.instances(config);
+      },
       units: function(config){
         for(let i=0;i<config.length;i++){
           this.instances(config[i]);
@@ -110,17 +133,28 @@ class Core {
 
 class Controls {
   constructor(C){
-    this.player = C.player;
+    this.C = C;
     document.addEventListener("keydown", this.onKeyDown.bind(this));
     document.addEventListener("keyup", this.onKeyUp.bind(this));
   }
-  //set rightDown or leftDown if the right or left keys are down
+
   onKeyDown(e) {
+
+    //set rightDown or leftDown if the right or left keys are down
     if ([38,39,40,37].indexOf(e.keyCode) !== -1){
-      if (e.keyCode == 38) Object.assign(this.player, {direction:1,velocity:4}) // up
-      if (e.keyCode == 39) Object.assign(this.player, {direction:2,velocity:4}) // right
-      if (e.keyCode == 40) Object.assign(this.player, {direction:3,velocity:4}) // down
-      if (e.keyCode == 37) Object.assign(this.player, {direction:4,velocity:4}) // left
+      if (e.keyCode == 38) Object.assign(this.C.player, {direction:1,velocity:4}) // up
+      if (e.keyCode == 39) Object.assign(this.C.player, {direction:2,velocity:4}) // right
+      if (e.keyCode == 40) Object.assign(this.C.player, {direction:3,velocity:4}) // down
+      if (e.keyCode == 37) Object.assign(this.C.player, {direction:4,velocity:4}) // left
+      e.preventDefault();
+    }
+
+    // set interactive
+    if ([49].indexOf(e.keyCode) !== -1){
+      if (e.keyCode == 49) {
+        let pos = this.C.player.futurePosition(10);
+        this.C.generate.add({ class:Wall, count:1, x:pos.x, y:pos.y, fill:'rgba(255, 255, 255, 1)', size:5 });
+      }
       e.preventDefault();
     }
   }
@@ -128,7 +162,7 @@ class Controls {
   //and unset them when the right or left key is released
   onKeyUp(e) {
     if ([38,39,40,37].indexOf(e.keyCode) !== -1){
-      Object.assign(this.player, {velocity:0,frame:0});
+      Object.assign(this.C.player, {velocity:0,frame:0});
     }
   }
 }
@@ -334,29 +368,29 @@ class Unit extends Render{
     return dir;
   }
 
-  futurePosition() {
+  futurePosition(ahead = this.velocity*2) {
     // returns estimated future postion {x,y}
     let futurePos = {x:this.x,y:this.y}
     switch(this.direction)
     {
     //up
     case 1:
-      futurePos.y = this.y - (this.velocity*2);
+      futurePos.y = this.y - (ahead);
       futurePos.x = this.x + this.choice;
       break;
     //right
     case 2:
-      futurePos.x = this.x + (this.velocity*2);
+      futurePos.x = this.x + (ahead);
       futurePos.y = this.y - this.choice;
       break;
     //down
     case 3:
-      futurePos.y = this.y + (this.velocity*2);
+      futurePos.y = this.y + (ahead);
       futurePos.x = this.x - this.choice;
       break;
     //left
     case 4:
-      futurePos.x = this.x - (this.velocity*2);
+      futurePos.x = this.x - (ahead);
       futurePos.y = this.y + this.choice;
       break;
     default:
@@ -534,7 +568,7 @@ class Unit extends Render{
               // check if neighbor is 'on the menu'
               if(this.prey.includes(pursue.constructor.name)){
                 // console.log(pursuit);
-                this.velocity = pursue.velocity > this.velocity ? pursue.velocity : this.velocity;
+                this.velocity = pursue.velocity > this.velocity ? pursue.velocity-1 : this.velocity;
                 this.pursuit = pursue;
                 break;
               }
