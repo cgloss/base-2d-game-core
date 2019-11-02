@@ -31,7 +31,7 @@ class Core {
       fill: 'rgba(186, 85, 211, .9)',
       config: [
         { class:Wall, count:1, x:250, y:250, fill:'rgba(255, 255, 255, 1)',size:10},
-        { class:Gremlin, count:0 },
+        { class:Gremlin, count:30 },
         { class:Player, count:1 }
       ]
     };
@@ -45,7 +45,7 @@ class Core {
 
     this.gps = {};
 
-    // variable operators
+    // letiable operators
     this.operators = {
       '>': function(a, b){ return a > b; },
       '<': function(a, b){ return a < b; }
@@ -54,14 +54,14 @@ class Core {
 
     this.generate = {
       units: function(config){
-        for(var i=0;i<config.length;i++){
+        for(let i=0;i<config.length;i++){
           this.instances(config[i]);
         }
         return;
       },
       instances: function(config){
         let unit = null;
-        for(var i=0;i<config.count;i++){
+        for(let i=0;i<config.count;i++){
           unit = new config.class(self,config);
           self.gps[unit.coordID()] = {unit:unit};
         }
@@ -271,14 +271,14 @@ class Unit extends Render{
 
   // todo work on this methods performance, the prior iteration using array instead of gps was faster.
   findNeighbors(proximity=1){
-    var coordInRange = [];
-    var neighborArr = [];
-    var range = this.size*proximity;
-    var selfId = this.coordID();
+    let coordInRange = [];
+    let neighborArr = [];
+    let range = this.size*proximity;
+    let selfId = this.coordID();
 
     // build x/y coords arr
-    for (var i = range; i >= 0; i--){
-      for (var j = range; j >= 0; j--){
+    for (let i = range; i >= 0; i--){
+      for (let j = range; j >= 0; j--){
       // build key list
       coordInRange.push('x'+((this.x+(range/2))-i)+'y'+((this.y+(range/2))-j));
       }
@@ -287,7 +287,7 @@ class Unit extends Render{
     // ignore self
     delete coordInRange[selfId];
 
-    for(var i = 0; i < coordInRange.length; i++){
+    for(let i = 0; i < coordInRange.length; i++){
       // check is a coord ID exists
       if(this.C.gps.hasOwnProperty(coordInRange[i])){
       //if(typeof this.C.gps[coordInRange[i]] != "undefined"){
@@ -304,27 +304,6 @@ class Unit extends Render{
     let distX =  Math.abs(single.x - location.x);
     let distY =  Math.abs(single.y - location.y);
     return Math.ceil(distX + distY);
-  }
-
-  plotCourse(single,location){
-    // could add a check for which of the last, in order to ensure the course is more direct rather then boxy
-    if(location.y < single.y){
-      single.direction = 1;
-      single.y -= single.velocity;
-    }
-    if(location.x < single.x){
-      single.direction = 4;
-      single.x -= single.velocity;
-    }
-    if(location.y > single.y){
-      single.direction = 3;
-      single.y += single.velocity;
-    }
-    if(location.x > single.x){
-      single.direction = 2;
-      single.x += single.velocity;
-    }
-    return single;
   }
 
   locateRelativeDirection(unit){
@@ -362,22 +341,22 @@ class Unit extends Render{
     {
     //up
     case 1:
-      futurePos.y = this.y - (this.velocity**2);
+      futurePos.y = this.y - (this.velocity*2);
       futurePos.x = this.x + this.choice;
       break;
     //right
     case 2:
-      futurePos.x = this.x + (this.velocity**2);
+      futurePos.x = this.x + (this.velocity*2);
       futurePos.y = this.y - this.choice;
       break;
     //down
     case 3:
-      futurePos.y = this.y + (this.velocity**2);
+      futurePos.y = this.y + (this.velocity*2);
       futurePos.x = this.x - this.choice;
       break;
     //left
     case 4:
-      futurePos.x = this.x - (this.velocity**2);
+      futurePos.x = this.x - (this.velocity*2);
       futurePos.y = this.y + this.choice;
       break;
     default:
@@ -387,23 +366,18 @@ class Unit extends Render{
     return futurePos;
   }
 
-  pursuitCourse(target) {
-    // var distance = (target.x - self.x)+(target.y - self.y);
+  plotCourse(target) {
     if(target.y < this.y){
       this.direction = 1;
-      this.y -= this.velocity;
     }
     if(target.x < this.x){
       this.direction = 4;
-      this.x -= this.velocity;
     }
     if(target.y > this.y){
       this.direction = 3;
-      this.y += this.velocity;
     }
     if(target.x > this.x){
       this.direction = 2;
-      this.x += this.velocity;
     }
     return;
   }
@@ -514,11 +488,11 @@ class Unit extends Render{
         this.collision=0;
         this.wall = null;
 
-        var collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
+        let collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
 
         if(collision.length){
           // remnant, clean up isle 520
-          for (var collider of collision){
+          for (let collider of collision){
             this.bool=!collider.bool;
             this.collision= 1;
             this.wall = this.locateRelativeDirection(collider);
@@ -538,25 +512,29 @@ class Unit extends Render{
         if(!(this instanceof Player)){
 
           // rng velocity set
-          // this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
+          this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
 
-          // todo this should be run 1 time, and in the process as its running we assing the proximity, and check against the various needs
+          // todo this should be run 1 time, and in the process as its running we assing the proximity, and check against the letious needs
           // new grouping base on gps
-          var group = this.findNeighbors(this.groupingRange);
+          let group = this.findNeighbors(this.groupingRange);
           if(group.length){
-            for (var leader of group){
-              this.direction = leader.direction;
-              this.velocity=leader.velocity;
-              this.bool=leader.bool;
-              break;
+            for (let leader of group){
+              if(!(leader instanceof Player)){
+                this.direction = leader.direction;
+                this.velocity=leader.velocity;
+                this.bool=leader.bool;
+                break;
+              }
             }
           }
 
-          var pursuit = this.findNeighbors(this.detectionRange);
+          let pursuit = this.findNeighbors(this.detectionRange);
           if(pursuit.length>=1){
-            // console.log(pursuit);
-            for (var pursue of pursuit){
-              if(pursue instanceof Player){
+            for (let pursue of pursuit){
+              // check if neighbor is 'on the menu'
+              if(this.prey.includes(pursue.constructor.name)){
+                // console.log(pursuit);
+                this.velocity = pursue.velocity > this.velocity ? pursue.velocity : this.velocity;
                 this.pursuit = pursue;
                 break;
               }
@@ -567,13 +545,19 @@ class Unit extends Render{
             // console.log(this.pursuit);
             // for testing only, though could make a diff sprite frame for in pursuit
             this.fill = 'red';
-            this.pursuitCourse(this.pursuit.futurePosition());
+            this.plotCourse(this.pursuit.futurePosition());
             this.persistance -= 1;
             if(this.persistance < 1){
               this.pursuit = false;
               this.fill = this.C.settings.fill;
               this.persistance = this.C.rng(this.getDefault('persistance'));
             }
+          }
+
+          // handle start position leashing
+          if(!this.pursuit && group.length < 2 && this.checkProximity(this,this.startPos)>this.leash){
+            // console.log('off leash');
+            this.plotCourse(this.startPos);
           }
 
         }
@@ -641,6 +625,7 @@ class Gremlin extends Unit{
     this.persistance = 100;
     this.groupingRange = 10;
     this.detectionRange = 15;
+    this.prey = ['Player'];
   }
 }
 
