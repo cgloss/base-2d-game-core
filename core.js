@@ -15,6 +15,16 @@
 // foot prints
 // trail following
 
+// Mechanics
+// hit points
+// stats
+// roll for hit
+
+// Design
+// update graphics
+// action animateion
+// tool in hand animation
+
 class Core {
   constructor(canvas) {
     let self = this;
