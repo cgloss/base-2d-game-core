@@ -439,9 +439,10 @@ class Unit extends Render{
       return;
     }
 
-    // todo add second and then move it to the opposite the direction of movement
-    this.C.generate.add({ class:FootPrint, count:1, x:this.x, y:this.y, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
-
+    if(this.bool){
+      // todo add second and then move it to the opposite the direction of movement
+      this.C.generate.add({ class:FootPrint, count:1, x:this.x-1, y:this.y-1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
+    }
     if(!(this instanceof Player)){
 
       this.decisionLog.push(this.direction);
@@ -553,34 +554,32 @@ class Unit extends Render{
             if(collider instanceof FootPrint) {
               continue;
             }
-            this.bool=!collider.bool;
-            this.collision= 1;
+            // this.bool=!collider.bool;
+            this.collision+= 1;
             this.wall = this.locateRelativeDirection(collider);
-            console.log(this.wall);
-            break;
-          }
-        }
-
-        if(this.collision && this.wall && this.wall.x && this.wall.y){
-          if(this.wall.y == this.direction){
-            this.velocity = 0;
-          }
-          if(this.wall.x == this.direction){
-            this.velocity = 0;
+            if(this.wall.y == this.direction || this.wall.x == this.direction){
+              this.velocity = 0;
+              this.turnAround();
+              this.move();
+              break
+            }
           }
         }
         //negate player
         if(!(this instanceof Player)){
 
           // rng velocity set
-          this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
-
+          if(!collision.length){
+            this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
+          }else{
+            this.plotCourse(this.futurePosition(10));
+          }
           // todo this should be run 1 time, and in the process as its running we assing the proximity, and check against the letious needs
           // new grouping base on gps
           let group = this.findNeighbors(this.groupingRange);
           if(group.length){
             for (let leader of group){
-              if(!(leader instanceof Player)){
+              if(!leader instanceof Player || !leader.inanimate){
                 this.direction = leader.direction;
                 this.velocity=leader.velocity;
                 this.bool=leader.bool;
@@ -592,12 +591,14 @@ class Unit extends Render{
           let pursuit = this.findNeighbors(this.detectionRange);
           if(pursuit.length>=1){
             for (let pursue of pursuit){
-              // check if neighbor is 'on the menu'
-              if(this.prey.includes(pursue.constructor.name)){
-                // console.log(pursuit);
-                this.velocity = pursue.velocity > this.velocity ? pursue.velocity-1 : this.velocity;
-                this.pursuit = pursue;
-                break;
+              if(!pursue.inanimate){
+                // check if neighbor is 'on the menu'
+                if(this.prey.includes(pursue.constructor.name)){
+                  // console.log(pursuit);
+                  this.velocity = pursue.velocity > this.velocity ? pursue.velocity-1 : this.velocity;
+                  this.pursuit = pursue;
+                  break;
+                }
               }
             }
           }
@@ -698,6 +699,7 @@ class Wall extends Unit{
     this.x = config.x;
     this.y = config.y;
     this.z = config.z;
+    this.inanimate = true;
     this.size = config.size;
     this.fill = config.fill;
   }
@@ -709,6 +711,7 @@ class FootPrint extends Unit{
     this.x = config.x;
     this.y = config.y;
     this.z = config.z;
+    this.inanimate = true;
     this.size = config.size;
     this.fill = config.fill;
   }
