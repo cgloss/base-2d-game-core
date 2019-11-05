@@ -12,7 +12,7 @@
 
 // TODOS
 // push units
-// foot prints
+// z index zooming for topography
 // trail following
 
 // Mechanics
@@ -40,28 +40,28 @@ class Core {
       hitSize:5,
       fill: 'rgba(186, 85, 211, .9)',
       config: [
-        { class:Wall, count:1, x:180, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:210, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:220, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:230, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:210, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:220, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:230, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:180, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
 
-        { class:Wall, count:1, x:190, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:190, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:190, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:190, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
 
-        { class:Wall, count:1, x:200, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:200, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:200, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:200, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
 
-        { class:Wall, count:1, x:210, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:210, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:210, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:210, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
 
-        { class:Wall, count:1, x:220, y:200, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:210, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:220, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:230, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:240, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:210, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:220, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:230, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
+        { class:Wall, count:1, x:220, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
 
-        { class:Gremlin, count:30 },
+        { class:Gremlin, count:3 },
         { class:Player, count:1 }
       ]
     };
@@ -126,8 +126,12 @@ class Core {
         this.gps[id] = {unit:unit};
         // verify that the entry is the same id before deletion
         if(unit._id === this.gps[key].unit._id){
-          // delete the current position of unit from the mastor record
-          delete this.gps[key];
+          if (this.gps[key].unit instanceof FootPrint){
+
+          }else{
+            // delete the current position of unit from the mastor record
+            delete this.gps[key];
+          }
           // render this unit at its new position
           unit.render();
           continue;
@@ -162,8 +166,8 @@ class Controls {
     // set interactive
     if ([49].indexOf(e.keyCode) !== -1){
       if (e.keyCode == 49) {
-        let pos = this.C.player.futurePosition(10);
-        this.C.generate.add({ class:Wall, count:1, x:pos.x, y:pos.y, fill:'rgba(255, 255, 255, 1)', size:5 });
+        let pos = this.C.player.futurePosition(15);
+        this.C.generate.add({ class:Wall, count:1, x:pos.x, y:pos.y, z:this.C.player.z, fill:'rgba(255, 255, 255, 1)', size:5 });
       }
       e.preventDefault();
     }
@@ -189,7 +193,7 @@ class Render {
     this.C.ctx.fill();
     this.C.ctx.closePath();
 
-    if(this instanceof Wall){
+    if(this instanceof Wall || this instanceof FootPrint){
       return this;
     }
 
@@ -304,7 +308,7 @@ class Unit extends Render{
 
   // will need to pass these unitarrays or gps into this or will fail
   coordID(location=this){
-    return 'x'+ Math.floor(location.x) + 'y' + Math.floor(location.y);
+    return 'x'+ Math.floor(location.x) + 'y' + Math.floor(location.y) + 'z' + location.z;
   };
 
   getDefault(key){
@@ -315,19 +319,23 @@ class Unit extends Render{
 
   // todo work on this methods performance, the prior iteration using array instead of gps was faster.
   findNeighbors(proximity=1){
+    if(this instanceof FootPrint){
+      return;
+    }
     let coordInRange = [];
     let neighborArr = [];
     let range = this.size*proximity;
     let selfId = this.coordID();
 
+    // console.log(selfId);
+
     // build x/y coords arr
     for (let i = range; i >= 0; i--){
       for (let j = range; j >= 0; j--){
       // build key list
-      coordInRange.push('x'+((this.x+(range/2))-i)+'y'+((this.y+(range/2))-j));
+      coordInRange.push('x'+((this.x+(range/2))-i)+'y'+((this.y+(range/2))-j)+'z'+this.z);
       }
     }
-
     // ignore self
     delete coordInRange[selfId];
 
@@ -351,7 +359,7 @@ class Unit extends Render{
   }
 
   locateRelativeDirection(unit){
-    let dir = {x:0,y:0};
+    let dir = {x:unit.x,y:unit.y};
 
     // set default of current direction
     if(this.direction){
@@ -426,10 +434,14 @@ class Unit extends Render{
     return;
   }
 
-   move() {
-    if(this instanceof Wall){
+  move() {
+    if(this instanceof Wall || this instanceof FootPrint){
       return;
     }
+
+    // todo add second and then move it to the opposite the direction of movement
+    this.C.generate.add({ class:FootPrint, count:1, x:this.x, y:this.y, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
+
     if(!(this instanceof Player)){
 
       this.decisionLog.push(this.direction);
@@ -484,6 +496,7 @@ class Unit extends Render{
       }
 
     }
+
     // update timestamp for current 'move'
     this.timestamp = Date.now();
     return;
@@ -510,7 +523,7 @@ class Unit extends Render{
   }
 
   rollDice() {
-    if(this instanceof Wall){
+    if(this instanceof Wall || this instanceof FootPrint){
       return this;
     }
 
@@ -537,9 +550,13 @@ class Unit extends Render{
         if(collision.length){
           // remnant, clean up isle 520
           for (let collider of collision){
+            if(collider instanceof FootPrint) {
+              continue;
+            }
             this.bool=!collider.bool;
             this.collision= 1;
             this.wall = this.locateRelativeDirection(collider);
+            console.log(this.wall);
             break;
           }
         }
@@ -626,6 +643,7 @@ class Player extends Unit{
     super(C);
     this.x = C.settings.width/2;
     this.y = C.settings.height/2;
+    this.z = 1;
     this.size = C.settings.unitSize*2;
     this.velocity = 0;
     this.direction = 0;
@@ -654,6 +672,7 @@ class Gremlin extends Unit{
     super(C);
     this.x = Math.floor(Math.random() * C.settings.width);
     this.y = Math.floor(Math.random() * C.settings.height);
+    this.z = 1;
     this.size = C.settings.unitSize;
     this.velocity = C.settings.velocity;
     this.direction = 0;
@@ -678,6 +697,18 @@ class Wall extends Unit{
     super(C);
     this.x = config.x;
     this.y = config.y;
+    this.z = config.z;
+    this.size = config.size;
+    this.fill = config.fill;
+  }
+}
+
+class FootPrint extends Unit{
+  constructor(C,config){
+    super(C);
+    this.x = config.x;
+    this.y = config.y;
+    this.z = config.z;
     this.size = config.size;
     this.fill = config.fill;
   }
