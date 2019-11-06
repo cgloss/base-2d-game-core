@@ -35,12 +35,15 @@ class Core {
       imgWidth:20,
       coneLength: 25,
       coneWidth: 10,
-      velocity:1,
+      velocity:2,
       unitSize:4,
       hitSize:5,
       fill: 'rgba(186, 85, 211, .9)',
       config: [
-        { class:Gremlin, count:12 },
+        { class:Gremlin, count:5, leash: 100 },
+        { class:Gremlin, count:5, leash: 200 },
+        { class:Gremlin, count:5, leash: 300 },
+        { class:Gremlin, count:5 },
         { class:Player, count:1 }
       ]
     };
@@ -450,9 +453,9 @@ class Unit extends Render{
   move() {
     if(this.inanimate) {return this;}
 
-    if(this.bool){
-      // todo add second and then move it to the opposite the direction of movement
-      this.C.generate.add({ class:FootPrint, count:1, x:this.x-1, y:this.y-1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
+    if(this.timestamp  % 10 == 0 && this.velocity > 1){
+        this.C.generate.add({ class:FootPrint, count:1, x:this.x-1, y:this.y-1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
+        this.C.generate.add({ class:FootPrint, count:1, x:this.x+1, y:this.y+1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
     }
     if(!(this instanceof Player)){
 
@@ -624,7 +627,7 @@ class Unit extends Render{
             }
 
             // handle start position leashing
-            if(!this.pursuit && group.length < 2 && this.checkProximity(this,this.startPos)>this.leash){
+            if(this.leash && !this.pursuit && group.length < 2 && this.checkProximity(this,this.startPos)>this.leash){
               // console.log('off leash');
               this.plotCourse(this.startPos);
             }
@@ -682,7 +685,7 @@ class Player extends Unit{
 
 // example unit class
 class Gremlin extends Unit{
-  constructor(C){
+  constructor(C,config = {}){
     super(C);
     this.x = Math.floor(Math.random() * C.settings.width);
     this.y = Math.floor(Math.random() * C.settings.height);
@@ -695,7 +698,7 @@ class Gremlin extends Unit{
     this.choice = Math.floor(Math.random()*2) == 1 ? 1 : -1;
     this.decisionLog = [];
     this.startPos = {x:this.x,y:this.y};
-    this.leash = 200;
+    this.leash = config.leash | 0;
     this.frame = 0;
     this.animrate = 2;
     this.fill = C.settings.fill;
