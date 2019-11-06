@@ -302,7 +302,7 @@ class Unit extends Render{
   }
 
   // todo work on this methods performance, the prior iteration using array instead of gps was faster.
-  findNeighbors(proximity=1){
+  findNeighbors(proximity=1, z=this.z){
     if(this instanceof FootPrint){
       return;
     }
@@ -317,7 +317,7 @@ class Unit extends Render{
     for (let i = range; i >= 0; i--){
       for (let j = range; j >= 0; j--){
       // build key list
-      coordInRange.push('x'+((this.x+(range/2))-i)+'y'+((this.y+(range/2))-j)+'z'+this.z);
+      coordInRange.push('x'+((this.x+(range/2))-i)+'y'+((this.y+(range/2))-j)+'z'+z);
       }
     }
     // ignore self
@@ -454,8 +454,8 @@ class Unit extends Render{
     if(this.inanimate) {return this;}
 
     if(this.timestamp  % 10 == 0 && this.velocity > 1){
-        this.C.generate.add({ class:FootPrint, count:1, x:this.x-1, y:this.y-1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
-        this.C.generate.add({ class:FootPrint, count:1, x:this.x+1, y:this.y+1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1 });
+        this.C.generate.add({ class:FootPrint, count:1, x:this.x-1, y:this.y-1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1, direction: this.direction });
+        this.C.generate.add({ class:FootPrint, count:1, x:this.x+1, y:this.y+1, z:this.z-1, fill:'rgba(255, 255, 255, .03)', size:1, direction: this.direction });
     }
     if(!(this instanceof Player)){
 
@@ -626,6 +626,21 @@ class Unit extends Render{
               }
             }
 
+            // TODO early proto for path finding, but neets fix for stopped units
+            // if(this.velocity && !this.collision){
+            //   let path = this.findNeighbors(1,this.z-1);
+            //   if(path.length){
+            //     for (let footprint of path){
+            //       if(footprint.inanimate && this.choice){
+            //         this.choice = !this.choice;
+            //         this.direction = footprint.direction;
+            //         this.move();
+            //         break;
+            //       }
+            //     }
+            //   }
+            // }
+
             // handle start position leashing
             if(this.leash && !this.pursuit && group.length < 2 && this.checkProximity(this,this.startPos)>this.leash){
               // console.log('off leash');
@@ -730,5 +745,6 @@ class FootPrint extends Unit{
     this.inanimate = true;
     this.size = config.size;
     this.fill = config.fill;
+    this.direction = config.direction;
   }
 }
