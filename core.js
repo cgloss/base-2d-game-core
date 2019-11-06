@@ -40,31 +40,14 @@ class Core {
       hitSize:5,
       fill: 'rgba(186, 85, 211, .9)',
       config: [
-        { class:Wall, count:1, x:180, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:210, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:220, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:230, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:180, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-
-        { class:Wall, count:1, x:190, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:190, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-
-        { class:Wall, count:1, x:200, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:200, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-
-        { class:Wall, count:1, x:210, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:210, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-
-        { class:Wall, count:1, x:220, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:210, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:220, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:230, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-        { class:Wall, count:1, x:220, y:240, z:1, fill:'rgba(255, 255, 255, 1)',size:5},
-
-        { class:Gremlin, count:3 },
+        { class:Gremlin, count:12 },
         { class:Player, count:1 }
       ]
     };
+
+    for(let i=0;i<680;i++){
+      this.settings.config.push({ class:Wall, count:1, x:99+i, y:200, z:1, fill:'rgba(255, 255, 255, 1)',size:2});
+    }
 
     this.c = canvas;
     // 2d graphic context for canvas
@@ -193,9 +176,7 @@ class Render {
     this.C.ctx.fill();
     this.C.ctx.closePath();
 
-    if(this instanceof Wall || this instanceof FootPrint){
-      return this;
-    }
+    if(this.inanimate) {return this;}
 
     if(!this.dead){
       this.drawCone();
@@ -418,6 +399,38 @@ class Unit extends Render{
     return futurePos;
   }
 
+  pastPosition(back = this.velocity*2) {
+    // returns estimated past postion {x,y}
+    let pastPos = {x:this.x,y:this.y}
+    switch(this.direction)
+    {
+    //up
+    case 3:
+      pastPos.y = this.y - (back);
+      pastPos.x = this.x + this.choice;
+      break;
+    //right
+    case 4:
+      pastPos.x = this.x + (back);
+      pastPos.y = this.y - this.choice;
+      break;
+    //down
+    case 1:
+      pastPos.y = this.y + (back);
+      pastPos.x = this.x - this.choice;
+      break;
+    //left
+    case 2:
+      pastPos.x = this.x - (back);
+      pastPos.y = this.y + this.choice;
+      break;
+    default:
+      pastPos.x = this.x;
+      pastPos.y = this.y;
+    }
+    return pastPos;
+  }
+
   plotCourse(target) {
     if(target.y < this.y){
       this.direction = 1;
@@ -435,9 +448,7 @@ class Unit extends Render{
   }
 
   move() {
-    if(this instanceof Wall || this instanceof FootPrint){
-      return;
-    }
+    if(this.inanimate) {return this;}
 
     if(this.bool){
       // todo add second and then move it to the opposite the direction of movement
@@ -524,9 +535,7 @@ class Unit extends Render{
   }
 
   rollDice() {
-    if(this instanceof Wall || this instanceof FootPrint){
-      return this;
-    }
+    if(this.inanimate) {return this;}
 
     // check for pulse
     if(!this.dead){
@@ -546,7 +555,7 @@ class Unit extends Render{
         this.collision=0;
         this.wall = null;
 
-        let collision = this.findNeighbors(3); // set to 3 to account for size of both self and any colliders
+        let collision = this.findNeighbors(4); // to account for size of both self and any colliders
 
         if(collision.length){
           // remnant, clean up isle 520
@@ -554,14 +563,14 @@ class Unit extends Render{
             if(collider instanceof FootPrint) {
               continue;
             }
-            // this.bool=!collider.bool;
+            // this.bool=collider.bool;
             this.collision+= 1;
             this.wall = this.locateRelativeDirection(collider);
             if(this.wall.y == this.direction || this.wall.x == this.direction){
               this.velocity = 0;
               this.turnAround();
-              this.move();
-              break
+              this.direction = 0;
+              this.plotCourse(this.pastPosition(10))
             }
           }
         }
@@ -571,55 +580,59 @@ class Unit extends Render{
           // rng velocity set
           if(!collision.length){
             this.velocity= Math.floor(Math.random() * this.C.settings.velocity)+1;
-          }else{
-            this.plotCourse(this.futurePosition(10));
-          }
-          // todo this should be run 1 time, and in the process as its running we assing the proximity, and check against the letious needs
-          // new grouping base on gps
-          let group = this.findNeighbors(this.groupingRange);
-          if(group.length){
-            for (let leader of group){
-              if(!leader instanceof Player || !leader.inanimate){
-                this.direction = leader.direction;
-                this.velocity=leader.velocity;
-                this.bool=leader.bool;
-                break;
-              }
-            }
-          }
 
-          let pursuit = this.findNeighbors(this.detectionRange);
-          if(pursuit.length>=1){
-            for (let pursue of pursuit){
-              if(!pursue.inanimate){
-                // check if neighbor is 'on the menu'
-                if(this.prey.includes(pursue.constructor.name)){
-                  // console.log(pursuit);
-                  this.velocity = pursue.velocity > this.velocity ? pursue.velocity-1 : this.velocity;
-                  this.pursuit = pursue;
+            // todo this should be run 1 time, and in the process as its running we assing the proximity, and check against the letious needs
+            // new grouping base on gps
+            let group = this.findNeighbors(this.groupingRange);
+            if(group.length){
+              for (let leader of group){
+                if(!leader instanceof Player || !leader.inanimate && !leader.collision){
+                  this.direction = leader.direction;
+                  this.velocity=leader.velocity;
+                  this.bool=leader.bool;
                   break;
                 }
               }
             }
-          }
-          // handle unit changes and persistance of pursuit
-          if(this.pursuit){
-            // console.log(this.pursuit);
-            // for testing only, though could make a diff sprite frame for in pursuit
-            this.fill = 'red';
-            this.plotCourse(this.pursuit.futurePosition());
-            this.persistance -= 1;
-            if(this.persistance < 1){
-              this.pursuit = false;
-              this.fill = this.C.settings.fill;
-              this.persistance = this.C.rng(this.getDefault('persistance'));
-            }
-          }
 
-          // handle start position leashing
-          if(!this.pursuit && group.length < 2 && this.checkProximity(this,this.startPos)>this.leash){
-            // console.log('off leash');
-            this.plotCourse(this.startPos);
+            let pursuit = this.findNeighbors(this.detectionRange);
+            if(pursuit.length>=1){
+              for (let pursue of pursuit){
+                if(!pursue.inanimate){
+                  // check if neighbor is 'on the menu'
+                  if(this.prey.includes(pursue.constructor.name)){
+                    // console.log(pursuit);
+                    this.velocity = pursue.velocity > this.velocity ? pursue.velocity-1 : this.velocity;
+                    this.pursuit = pursue;
+                    break;
+                  }
+                }
+              }
+            }
+            // handle unit changes and persistance of pursuit
+            if(this.pursuit){
+              // console.log(this.pursuit);
+              // for testing only, though could make a diff sprite frame for in pursuit
+              this.fill = 'red';
+              this.plotCourse(this.pursuit.futurePosition());
+              this.persistance -= 1;
+              if(this.persistance < 1){
+                this.pursuit = false;
+                this.fill = this.C.settings.fill;
+                this.persistance = this.C.rng(this.getDefault('persistance'));
+              }
+            }
+
+            // handle start position leashing
+            if(!this.pursuit && group.length < 2 && this.checkProximity(this,this.startPos)>this.leash){
+              // console.log('off leash');
+              this.plotCourse(this.startPos);
+            }
+
+          }else{
+            if (this.choice) {
+              this.move();
+            }
           }
 
         }
