@@ -40,10 +40,10 @@ class Core {
       hitSize:5,
       fill: 'rgba(186, 85, 211, .9)',
       config: [
-        { class:Gremlin, count:5, leash: 100 },
-        { class:Gremlin, count:5, leash: 200 },
-        { class:Gremlin, count:5, leash: 300 },
-        { class:Gremlin, count:5 },
+        { class:Gremlin, count:2, leash: 100 },
+        { class:Gremlin, count:2, leash: 200 },
+        { class:Gremlin, count:2, leash: 300 },
+        { class:Gremlin, count:2 },
         { class:Player, count:1 }
       ]
     };
@@ -288,6 +288,7 @@ class Unit extends Render{
     // random unique id
     this._id = (Date.now().toString(36) + Math.random().toString(36).substr(2, 9)).toUpperCase();
     this.timestamp = Date.now();
+    this.prey = []
   }
 
   // will need to pass these unitarrays or gps into this or will fail
@@ -539,9 +540,27 @@ class Unit extends Render{
 
   rollDice() {
     if(this.inanimate) {return this;}
+    // need this to ensure aoe and other cases where the target was not killed by a live enemy / directly
+    if(this.hp <= 0){
+      this.dead = true;
+    }
 
     // check for pulse
     if(!this.dead){
+
+      let collision = this.findNeighbors(4); // to account for size of both self and any colliders
+      let pursuit = this.findNeighbors(this.detectionRange);
+      if(pursuit.length>=1){
+      for (let pursue of pursuit){
+        if(!pursue.inanimate){
+          // check if neighbor is 'on the menu'
+          if(this.prey.includes(pursue.constructor.name)){
+            this.pursuit = pursue;
+            break;
+          }
+        }
+      }
+    }
 
       //initial collision detect
       if(this.x<=this.size||this.x>=this.C.c.width-this.size||this.y<=this.size||this.y>=this.C.c.height-this.size){
@@ -557,8 +576,6 @@ class Unit extends Render{
         //collision reset
         this.collision=0;
         this.wall = null;
-
-        let collision = this.findNeighbors(4); // to account for size of both self and any colliders
 
         if(collision.length){
           // remnant, clean up isle 520
@@ -577,6 +594,7 @@ class Unit extends Render{
             }
           }
         }
+
         //negate player
         if(!(this instanceof Player)){
 
@@ -598,23 +616,9 @@ class Unit extends Render{
               }
             }
 
-            let pursuit = this.findNeighbors(this.detectionRange);
-            if(pursuit.length>=1){
-              for (let pursue of pursuit){
-                if(!pursue.inanimate){
-                  // check if neighbor is 'on the menu'
-                  if(this.prey.includes(pursue.constructor.name)){
-                    // console.log(pursuit);
-                    this.velocity = pursue.velocity > this.velocity ? pursue.velocity-1 : this.velocity;
-                    this.pursuit = pursue;
-                    break;
-                  }
-                }
-              }
-            }
             // handle unit changes and persistance of pursuit
             if(this.pursuit){
-              // console.log(this.pursuit);
+              this.velocity = this.pursuit.velocity > this.velocity ? this.pursuit.velocity-1 : this.velocity;
               // for testing only, though could make a diff sprite frame for in pursuit
               this.fill = 'red';
               this.plotCourse(this.pursuit.futurePosition());
@@ -660,6 +664,21 @@ class Unit extends Render{
       if(this.collision >= 1 || this.wall != this.direction){
         this.bool=!this.bool;
       }
+
+      // very rough combat single target per moment
+      if(this.pursuit){
+        let inHitRange = this.findNeighbors(10); // use as range of melee weps and accuracy stat boost for projectiles (10 default arms legth consistent hits, less will require moving closer and mids to collision dist)
+        if(inHitRange.find(contact => contact._id === this.pursuit._id)){
+          let targetRelativeDir = this.locateRelativeDirection(this.pursuit)
+          if(targetRelativeDir !== undefined && targetRelativeDir.y && targetRelativeDir.x){
+            let isFaceingTarget = (targetRelativeDir.y === this.direction || targetRelativeDir.x === this.direction);
+            if(isFaceingTarget){
+              this.pursuit.hp -= 1; // roll for hit, and damage with modifiers for wep here
+            }
+          }
+        }
+      }
+
       this.move();
     }
 
@@ -695,6 +714,8 @@ class Player extends Unit{
       down: "lib/img/mysprites_tileset_walk_down.png",
       left: "lib/img/mysprites_tileset_walk_left.png",
     };
+    this.prey = ['Gremlin'];
+    this.hp = 1000;
   }
 }
 
@@ -721,6 +742,7 @@ class Gremlin extends Unit{
     this.groupingRange = 10;
     this.detectionRange = 15;
     this.prey = ['Player'];
+    this.hp = 10;
   }
 }
 
@@ -733,6 +755,7 @@ class Wall extends Unit{
     this.inanimate = true;
     this.size = config.size;
     this.fill = config.fill;
+    this.hp = 100;
   }
 }
 
