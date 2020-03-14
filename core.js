@@ -288,7 +288,10 @@ class Unit extends Render{
     // random unique id
     this._id = (Date.now().toString(36) + Math.random().toString(36).substr(2, 9)).toUpperCase();
     this.timestamp = Date.now();
-    this.prey = []
+    this.prey = [];
+    this.ac = 0;
+    this.dmgDie = 0;
+    this.dmgModifier = 0;
   }
 
   // will need to pass these unitarrays or gps into this or will fail
@@ -341,6 +344,10 @@ class Unit extends Render{
     let distX =  Math.abs(single.x - location.x);
     let distY =  Math.abs(single.y - location.y);
     return Math.ceil(distX + distY);
+  }
+
+  rollDie(max) {
+    return 1 + Math.floor(Math.random()*max)
   }
 
   locateRelativeDirection(unit){
@@ -673,7 +680,15 @@ class Unit extends Render{
           if(targetRelativeDir !== undefined && targetRelativeDir.y && targetRelativeDir.x){
             let isFaceingTarget = (targetRelativeDir.y === this.direction || targetRelativeDir.x === this.direction);
             if(isFaceingTarget){
-              this.pursuit.hp -= 1; // roll for hit, and damage with modifiers for wep here
+              // roll for hit, and damage with modifiers for wep here
+              let hit = this.rollDie(20) >= this.pursuit.ac
+              if(hit){
+                let damage = this.rollDie(this.dmgDie) + this.dmgModifier;
+                console.log(damage);
+                this.pursuit.hp -= damage;
+              }else{
+                console.log("miss");
+              }
             }
           }
         }
@@ -716,6 +731,8 @@ class Player extends Unit{
     };
     this.prey = ['Gremlin'];
     this.hp = 1000;
+    this.ac = 20;
+    this.dmgDie = 8;
   }
 }
 
@@ -743,6 +760,8 @@ class Gremlin extends Unit{
     this.detectionRange = 15;
     this.prey = ['Player'];
     this.hp = 10;
+    this.ac = 10;
+    this.dmgDie = 6;
   }
 }
 
@@ -756,6 +775,7 @@ class Wall extends Unit{
     this.size = config.size;
     this.fill = config.fill;
     this.hp = 100;
+    this.ac = 10;
   }
 }
 
